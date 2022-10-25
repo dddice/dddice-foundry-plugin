@@ -1,0 +1,20 @@
+# IDE
+.idea/
+.vs/
+*.iml
+*.njsproj
+/.vscode
+icons/\!dox/
+/node_modules/
+.DS_Store
+**.env
+npm-debug.log
+coverage/
+debug/
+docs/
+node_modules/
+bin/
+obj/
+
+# If you add foundry.js for autocomplete
+foundry.js
