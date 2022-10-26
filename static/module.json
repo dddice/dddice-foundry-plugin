@@ -1,6 +1,7 @@
 {
-  "name": "module",
-  "title": "New Module",
+  "id": "dddice",
+  "name": "dddice",
+  "title": "dddice | 3D dice roller",
   "description": "",
   "version": "This is auto replaced",
   "library": "false",
@@ -9,14 +10,10 @@
   "compatibleCoreVersion": "0.7.9",
   "authors": [
     {
-      "name": "Blackcloud",
-      "url": "https://github.com/Blackcloud010",
-      "discord": "Blackcloud010#5426"
+      "name": "Celeste Bloodreign"
     },
     {
-      "name": "The League of Extraordinary FVTT Developers",
-      "url": "https://github.com/League-of-Foundry-Developers",
-      "discord": "discordID#0001"
+      "name": "Nullfish"
     }
   ],
   "dependencies": [
@@ -32,7 +29,7 @@
 
   ],
   "styles": [
-    "/styles/module.css"
+    "module.css"
   ],
   "languages": [
     {

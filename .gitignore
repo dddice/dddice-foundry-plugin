@@ -18,3 +18,5 @@ obj/
 
 # If you add foundry.js for autocomplete
 foundry.js
+dist
+/.parcel-cache/

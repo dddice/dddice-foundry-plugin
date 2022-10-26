@@ -1,32 +1,46 @@
-import { TemplatePreloader } from "./module/helper/TemplatePreloader";
+/** @format */
 
-Hooks.once("init", async () => {
-    console.log("=============================HMR============================")
+import { ConfigPanel } from './module/ConfigPanel';
+
+require('dddice-js');
+(window as any).dddice = undefined;
+
+Hooks.once('init', async () => {
+  game.settings.registerMenu('dddice', 'connect', {
+    name: 'Account',
+    label: 'Connect to dddice',
+    hint: 'Link to your dddice account with your api key. Generate one at https://dddice.com/account/developer',
+    icon: 'fa-solid fa-cloud-exclamation',
+    type: ConfigPanel,
+    restricted: false,
+  });
+
+  game.settings.register('dddice', 'apiKey', {
+    name: 'Api Key',
+    hint: 'Link to your dddice account with your api key. Generate one at https://dddice.com/account/developer',
+    scope: 'client',
+    default: '',
+    type: String,
+    config: false,
+  });
+
+  game.settings.register('dddice', 'room', {
+    name: 'Room',
+    hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
+    scope: 'client',
+    type: String,
+    default: '',
+    config: false,
+  });
+
+  game.settings.register('dddice', 'theme', {
+    name: 'Dice Theme',
+    hint: 'Choose a dice theme from your dice box',
+    scope: 'client',
+    type: String,
+    default: '',
+    config: false,
+  });
 });
 
-Hooks.once("ready", async () => {
-    
-});
-
-
-if (process.env.NODE_ENV === "development") {
-    if (module.hot) {
-        module.hot.accept();
-
-        if (module.hot.status() === "apply") {
-            for (const template in _templateCache) {
-                if (Object.prototype.hasOwnProperty.call(_templateCache, template)) {
-                    delete _templateCache[template];
-                }
-            }
-
-            TemplatePreloader.preloadHandlebarsTemplates().then(() => {
-                for (const application in ui.windows) {
-                    if (Object.prototype.hasOwnProperty.call(ui.windows, application)) {
-                        ui.windows[application].render(true);
-                    }
-                }
-            });
-        }
-    }
-}
+Hooks.once('ready', async () => {});

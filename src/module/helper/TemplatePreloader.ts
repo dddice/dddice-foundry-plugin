@@ -1,11 +1,11 @@
-import "../../../static/templates/**/*.html";
+/** @format */
 
 export class TemplatePreloader {
-    /**
-     * Preload a set of templates to compile and cache them for fast access during rendering
-     */
-    static async preloadHandlebarsTemplates() {
-        const templatePaths = ["__ALL_TEMPLATES__"];
-        return loadTemplates(templatePaths);
-    }
+  /**
+   * Preload a set of templates to compile and cache them for fast access during rendering
+   */
+  static async preloadHandlebarsTemplates() {
+    const templatePaths = ['modules/dddice/templates/ConfigPanel.html'];
+    return loadTemplates(templatePaths);
+  }
 }
