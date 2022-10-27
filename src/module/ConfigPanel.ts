@@ -78,13 +78,8 @@ export class ConfigPanel extends FormApplication {
       this.loading = true;
       this.connected = false;
       this.render();
-      await this.maximize();
       await game.settings.set('dddice', 'apiKey', apiKey);
       const api = new API(apiKey);
-      (window as any).dddice = new (window as any).ThreeDDice(
-        document.getElementById('dddice'),
-        apiKey,
-      );
       let themes;
       [this.rooms, themes] = await Promise.all([api.room().list(), api.diceBox().list()]);
       this.rooms = this.rooms.sort((a, b) => a.name.localeCompare(b.name));

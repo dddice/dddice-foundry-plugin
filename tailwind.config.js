@@ -4,6 +4,7 @@ const defaultTheme = require("tailwindcss/defaultTheme");
 
 const config = {
   important: true,
+  safelist: ['hidden'],
   corePlugins: {
     preflight: false,
   },
