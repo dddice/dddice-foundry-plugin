@@ -49,6 +49,7 @@ export class ConfigPanel extends FormApplication {
           return { ...theme, selected: '' };
         }
       }),
+      theme: game.settings.get('dddice', 'theme'),
       apiKey: game.settings.get('dddice', 'apiKey'),
       loading: this.loading,
       controls: !this.connected || this.loading ? 'disabled' : '',
@@ -84,9 +85,13 @@ export class ConfigPanel extends FormApplication {
         document.getElementById('dddice'),
         apiKey,
       );
-      [this.rooms, this.themes] = await Promise.all([api.room().list(), api.diceBox().list()]);
+      let themes;
+      [this.rooms, themes] = await Promise.all([api.room().list(), api.diceBox().list()]);
       this.rooms = this.rooms.sort((a, b) => a.name.localeCompare(b.name));
-      this.themes = this.themes.sort((a, b) => a.name.localeCompare(b.name));
+      while (themes) {
+        this.themes = [...this.themes, ...themes].sort((a, b) => a.name.localeCompare(b.name));
+        themes = await api.diceBox().next();
+      }
       this.statusColor = 'text-success';
       this.connectionStatus = 'successfully connected to dddice';
       this.connected = true;

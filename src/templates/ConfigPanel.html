@@ -49,11 +49,19 @@
   </div>
   <div class="form-group">
     <label for="dddice-theme">Select a Dice Theme</label>
-    <select id="dddice-theme" name="dddice-theme" {{controls}}>
+    <input
+      type="text"
+      id="dddice-theme"
+      name="dddice-theme"
+      list="dddice-theme-list"
+      value="{{theme}}"
+      {{controls}}
+    />
+    <datalist id="dddice-theme-list">
       {{#each themes}}
-      <option value="{{id}}" {{selected}}>{{name}}</option>
+      <option value="{{id}}">{{name}}</option>
       {{/each}}
-    </select>
+    </datalist>
   </div>
   <footer class="sheet-footer flexrow pt-5">
     <button type="submit" name="submit"><i class="fa fa-check"></i>OK</button>
