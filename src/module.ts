@@ -1,5 +1,5 @@
 /** @format */
-
+CONFIG.debug.hooks = true;
 import { ConfigPanel } from './module/ConfigPanel';
 import API from './module/api';
 import { IRoll, IUser } from 'dddice-js';
@@ -110,8 +110,17 @@ Hooks.once('ready', async () => {
 });
 
 Hooks.on('createChatMessage', chatMessage => {
-  if (chatMessage?.rolls?.length > 0) {
-    const dddiceRoll = convertFVTTRollModelToDddiceRollModel(chatMessage.rolls);
+  log.debug('calling Create Chat Message hook', chatMessage);
+
+  // massage v9 and v10
+  const rolls =
+    chatMessage?.rolls?.length > 0
+      ? chatMessage.rolls
+      : chatMessage.roll?.terms.length > 0
+      ? [chatMessage.roll]
+      : null;
+  if (rolls?.length > 0) {
+    const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
     if (chatMessage.isAuthor) {
       (window as any).api
         .roll()
@@ -180,6 +189,7 @@ const updateChat = (roll: IRoll) => {
       user: game.user._id,
       speaker: 'Celeste Bloodreign',
       type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+      roll: new Roll(),
     });
   }
 };
