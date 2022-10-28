@@ -2,6 +2,8 @@
 
 Roll 3D dice from Foundry VTT! Integrates [dddice](https://dddice.com) with Foundry VTT, providing you with a seamless dice rolling experience. Use dddice to overlay dice on your stream or simply share the fun of dice rolling in a private room.
 
+![dddice Foundry VTT Plugin](./assets/dddice-foundry-plugin.gif?raw=true)
+
 ## dddice vs. Dice So Nice
 
 [Dice So Nice](https://foundryvtt.com/packages/dice-so-nice/) is another 3D dice plugin for Foundry VTT, but there are few key features that separate dddice.
@@ -17,7 +19,7 @@ For more information, visit the official [dddice homepage](https://dddice.com?re
 
 dddice is built with our community in mind! We are extremely interested in your feedback. Interested in connecting with us?
 
-- [Become a backer on Patreon](https://discord.gg/NsNnd8xQ6K)
+- [Become a backer on Patreon](https://www.patreon.com/dddice)
 - [Join the dddice Discord Server](https://discord.gg/NsNnd8xQ6K)
 - [Follow dddice on Twitter](https://twitter.com/dddice_app)
 - [Join the dddice subreddit](https://reddit.com/r/dddice)
