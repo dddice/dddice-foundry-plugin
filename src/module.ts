@@ -6,7 +6,7 @@ import { IRoll, IUser } from 'dddice-js';
 import createLogger from './module/log';
 
 require('dddice-js');
-const log = createLogger('engine');
+const log = createLogger('module');
 
 Hooks.once('init', async () => {
   (window as any).dddice = new (window as any).ThreeDDice();
@@ -121,6 +121,7 @@ Hooks.on('createChatMessage', chatMessage => {
       : null;
   if (rolls?.length > 0) {
     const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
+    log.debug('formatted dddice roll', dddiceRoll);
     if (chatMessage.isAuthor) {
       (window as any).api
         .roll()
@@ -179,7 +180,7 @@ const updateChat = (roll: IRoll) => {
       '',
     );
 
-    ChatMessage.create({
+    const data = {
       content: `<div class="dice-roll">
     <div class="dice-result">
         <div class="dice-formula">${dieEquation}</div>
@@ -189,8 +190,13 @@ const updateChat = (roll: IRoll) => {
       user: game.user._id,
       speaker: 'Celeste Bloodreign',
       type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-      roll: new Roll(),
-    });
+    };
+
+    if (!foundry.utils.isNewerVersion(game.version, 10)) {
+      data['roll'] = new Roll();
+    }
+
+    ChatMessage.create(data);
   }
 };
 
@@ -216,13 +222,25 @@ const convertFVTTRollModelToDddiceRollModel = (
           }, [])
           .flatMap(term => {
             if (term instanceof DiceTerm) {
-              return term.results.map(result => {
+              return term.results.flatMap(result => {
                 if (term.modifiers.indexOf('kh1') !== -1) {
                   operator = { k: 'h1' };
                 } else if (term.modifiers.indexOf('kl1') !== -1) {
                   operator = { k: 'l1' };
                 }
-                return { type: `d${term.faces}`, value: result.result, theme };
+                if (term.faces === 100) {
+                  return [
+                    { type: `d10`, value: result.result % 10, theme },
+                    {
+                      type: `d10x`,
+                      value: Math.floor(result.result / 10),
+                      value_to_display: `${Math.floor(result.result / 10)}0`,
+                      theme,
+                    },
+                  ];
+                } else {
+                  return { type: `d${term.faces}`, value: result.result, theme };
+                }
               });
             } else if (term.type === 'mod') {
               return term;
