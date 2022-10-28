@@ -1,8 +1,8 @@
 {
   "id": "dddice",
   "name": "dddice",
-  "title": "dddice | 3D dice roller",
-  "description": "",
+  "title": "dddice - 3D Dice Roller",
+  "description": "Roll 3D digital dice using Foundry VTT.",
   "version": "This is auto replaced",
   "library": "false",
   "manifestPlusVersion": "1.0.0",
@@ -14,10 +14,7 @@
   },
   "authors": [
     {
-      "name": "Celeste Bloodreign"
-    },
-    {
-      "name": "Nullfish"
+      "name": "dddice"
     }
   ],
   "conflicts": [

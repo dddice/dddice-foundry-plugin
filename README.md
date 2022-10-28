@@ -33,7 +33,7 @@ dddice features a robust API and SDK to build applications with.
 
 ## Compatability
 
-dddice was tested with Foundry VTT 10+
+dddice is compatible with Foundry VTT v9+, 10+.
 
 ## Development
 

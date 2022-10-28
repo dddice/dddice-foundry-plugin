@@ -1,5 +1,5 @@
 {
-  "name": "placeholder",
+  "name": "dddice-foundry-plugin",
   "source": [
     "src/module.ts",
     "src/module.css",
@@ -7,8 +7,13 @@
   ],
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "version": "1.0.0",
-  "description": "Roll 3D digital dice using your favorite browser-based VTT.",
-  "repository": {},
+  "description": "Roll 3D digital dice using Foundry VTT.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dddice/dddice-foundry-plugin"
+  },
+  "license": "MIT",
+  "homepage": "https://dddice.com",
   "author": "dddice <developers@dddice.com>",
   "private": true,
   "scripts": {
