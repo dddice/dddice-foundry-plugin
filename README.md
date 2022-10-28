@@ -1,43 +1,46 @@
-# About
-A template for creating foundry modules using typescript. Project files are setup to be hot reloaded.
-Information on hot module replacement: https://webpack.js.org/concepts/hot-module-replacement/
+# dddice Foundry VTT Plugin
 
-# Setup:
-About Bundler:  
-This project uses webpack to bundle your files. What this means is that every script file in src/ will get 'bundled' into one output .js file in dist/.
-Likewise every static file (.html, .json, etc.) in static/ will get moved to dist.  
-Because of this you should NOT have your development working directory inside the foundryuser folder. Instead you should follow the instructions below
-for setting up symantic links between the dist/ folder and foundryuser.
+Roll 3D dice from Foundry VTT! Integrates [dddice](https://dddice.com) with Foundry VTT, providing you with a seamless dice rolling experience. Use dddice to overlay dice on your stream or simply share the fun of dice rolling in a private room.
 
+## dddice vs. Dice So Nice
 
-- Run npm install
-- Rename module.ts to your chosen module name.
-- Rename the references to module.ts in webpack.config.js file. (Line 26)
-- Fill in module.json with actual information.
-- run: npm run build  
-- Create a symantic link between the dist/ folder to a module folder in FoundryUser/Data/modules/[MODULE_NAME]  
---	Instructions (for windows) 
---	Open a command prompt and navigate to FoundryUser/Data/modules   
---	Run: mklink /D MODULE_NAME [DEVELOPMENT_PATH]/dist  
+[Dice So Nice](https://foundryvtt.com/packages/dice-so-nice/) is another 3D dice plugin for Foundry VTT, but there are few key features that separate dddice.
 
-A note on typescript, it is completely optional and if you do not wish to use then rename any .ts files and their references to .js.
+- **Roll Anywhere** - dddice is an external service that allows you to roll 3D dice from our own site, D&DBeyond, Foundry, and other VTTs.
+- **Synced Rolls** - Even better, dddice syncs rolls from all these platforms for a seamless rolling experience, no matter where you are.
+- **Streaming Mode** - dddice's Streaming Mode renders your party's rolls transparently over your stream using tools like OBS or Streamlabs. [Learn More](https://dddice.com/for-streamers).
+- **Customize Dice** - Easily customize dice and share with your friends (or foes) using our simple [dice editor](https://dddice.com/editor?ref=foundry).
 
-# Usage:
-Development: 
-To run with hotswap enabled run the command: npm run start
+For more information, visit the official [dddice homepage](https://dddice.com?ref=foundry).
 
-Release:
-To ready the project for release run the command: npm run build:production
+## Documentation and API
 
-CD/CI:
-This template is setup with automatic github release, developed by League of Foundry Developers in
-their FoundryVtt-Module-Template. https://github.com/League-of-Foundry-Developers/FoundryVTT-Module-Template 
+dddice features a robust API and SDK to build applications with.
 
-# Troubleshooting:
-Hot Reload force refreshes my page!
- - access foundry through localhost:8080 instead of localhost:30000
- - You might have multiple modules running HMR. It is critical that if you are working on multiple modules that only a single module is using hot module reload at a time. 
+- [API Documentation](https://docs.dddice.com/api?ref=foundry)
+- [SDK Documentation](https://docs.dddice.com/sdk/js/latest?ref=foundry)
 
-# Credits:
-Used webpack and setup files as reference: https://github.com/anvil-vtt/FateX   
-Used github workflow and template reference: https://github.com/League-of-Foundry-Developers/FoundryVTT-Module-Template   
+## Compatability
+
+dddice was tested with Foundry VTT 10+
+
+## Development
+
+If you would like to contribute to this extension, follow the instructions below.
+
+You will need [Node.js](https://nodejs.org/en/) and [NPM](https://www.npmjs.com/).
+
+```shell
+# Clone this repository
+git clone git@github.com:dddice/dddice-foundry-plugin.git
+
+# Install dependencies
+npm i
+
+# Start the browser extension
+npm run start
+```
+
+## License
+
+MIT
