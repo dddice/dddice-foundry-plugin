@@ -6,29 +6,21 @@
   "version": "This is auto replaced",
   "library": "false",
   "manifestPlusVersion": "1.0.0",
-  "minimumCoreVersion": "0.7.9",
+  "minimumCoreVersion": "9.280",
   "compatibleCoreVersion": "10.288",
-  "compatibility":{
+  "compatibility": {
     "verified": "10.288",
-    "minimum": "9"
+    "minimum": "9.280"
   },
   "authors": [
     {
       "name": "dddice"
     }
   ],
-  "conflicts": [
-
-  ],
-  "esmodules": [
-    "module.js"
-  ],
-  "scripts": [
-
-  ],
-  "styles": [
-    "module.css"
-  ],
+  "conflicts": [],
+  "esmodules": ["module.js"],
+  "scripts": [],
+  "styles": ["module.css"],
   "languages": [
     {
       "lang": "en",
