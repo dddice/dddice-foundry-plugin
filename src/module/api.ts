@@ -54,7 +54,7 @@ class API {
     create: async (params: {
       dice: { type: string; theme: string }[];
       room: string;
-      operator: Record<string, unknown>;
+      operator: object;
     }) => {
       (await axios.post(`${API_URI}/roll`, params)).data.data;
     },

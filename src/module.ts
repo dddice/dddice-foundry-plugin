@@ -3,8 +3,10 @@
 import { ConfigPanel } from './module/ConfigPanel';
 import API from './module/api';
 import { IRoll, IUser } from 'dddice-js';
+import createLogger from './module/log';
 
 require('dddice-js');
+const log = createLogger('engine');
 
 Hooks.once('init', async () => {
   (window as any).dddice = new (window as any).ThreeDDice();
@@ -113,10 +115,13 @@ Hooks.on('createChatMessage', chatMessage => {
     if (chatMessage.isAuthor) {
       (window as any).api
         .roll()
-        .create({ dice: dddiceRoll, room: game.settings.get('dddice', 'room') });
+        .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
     }
     // hide the message because it will get created later by the dddice roll complete
     chatMessage._dddice_hide = true;
+
+    // remove the sound
+    mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
   }
 });
 
@@ -146,6 +151,7 @@ const notConnectedMessage = () => {
 };
 
 const updateChat = (roll: IRoll) => {
+  log.debug(roll);
   if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
     const dieEquation = Object.entries(
       roll.values
@@ -178,32 +184,44 @@ const updateChat = (roll: IRoll) => {
   }
 };
 
-const convertFVTTRollModelToDddiceRollModel = (fvttRolls: Roll[]): IRoll => {
+const convertFVTTRollModelToDddiceRollModel = (
+  fvttRolls: Roll[],
+): { dice: IRoll; operator: object } => {
+  log.debug(fvttRolls);
   const theme = game.settings.get('dddice', 'theme');
-  return fvttRolls
-    .flatMap(roll =>
-      roll.terms
-        .reduce((prev, next) => {
-          // reduce to combine operators + or - with the numeric term after them
-          if (next instanceof NumericTerm) {
-            const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
-            prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
-          } else {
-            prev.push(next);
-          }
-          return prev;
-        }, [])
-        .flatMap(term => {
-          if (term instanceof DiceTerm) {
-            return term.results.map(result => {
-              return { type: `d${term.faces}`, value: result.result, theme };
-            });
-          } else if (term.type === 'mod') {
-            return term;
-          } else {
-            return null;
-          }
-        }),
-    )
-    .filter(i => i);
+  let operator;
+  return {
+    dice: fvttRolls
+      .flatMap(roll =>
+        roll.terms
+          .reduce((prev, next) => {
+            // reduce to combine operators + or - with the numeric term after them
+            if (next instanceof NumericTerm) {
+              const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
+              prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
+            } else {
+              prev.push(next);
+            }
+            return prev;
+          }, [])
+          .flatMap(term => {
+            if (term instanceof DiceTerm) {
+              return term.results.map(result => {
+                if (term.modifiers.indexOf('kh1') !== -1) {
+                  operator = { k: 'h1' };
+                } else if (term.modifiers.indexOf('kl1') !== -1) {
+                  operator = { k: 'l1' };
+                }
+                return { type: `d${term.faces}`, value: result.result, theme };
+              });
+            } else if (term.type === 'mod') {
+              return term;
+            } else {
+              return null;
+            }
+          }),
+      )
+      .filter(i => i),
+    operator,
+  };
 };
