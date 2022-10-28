@@ -6,12 +6,23 @@ Roll 3D dice from Foundry VTT! Integrates [dddice](https://dddice.com) with Foun
 
 [Dice So Nice](https://foundryvtt.com/packages/dice-so-nice/) is another 3D dice plugin for Foundry VTT, but there are few key features that separate dddice.
 
-- **Roll Anywhere** - dddice is an external service that allows you to roll 3D dice from our own site, D&DBeyond, Foundry, and other VTTs.
-- **Synced Rolls** - Even better, dddice syncs rolls from all these platforms for a seamless rolling experience, no matter where you are.
+- **Roll Anywhere** - dddice is an external service that allows you to roll 3D dice from our own site, Foundry VTT, D&D Beyond, and other VTTs.
+- **Synced Rolls** - Even better, dddice syncs rolls from all these platforms for a seamless rolling experience no matter where you are.
 - **Streaming Mode** - dddice's Streaming Mode renders your party's rolls transparently over your stream using tools like OBS or Streamlabs. [Learn More](https://dddice.com/for-streamers).
 - **Customize Dice** - Easily customize dice and share with your friends (or foes) using our simple [dice editor](https://dddice.com/editor?ref=foundry).
 
 For more information, visit the official [dddice homepage](https://dddice.com?ref=foundry).
+
+## Feedback
+
+dddice is built with our community in mind! We are extremely interested in your feedback. Interested in connecting with us?
+
+- [Become a backer on Patreon](https://discord.gg/NsNnd8xQ6K)
+- [Join the dddice Discord Server](https://discord.gg/NsNnd8xQ6K)
+- [Follow dddice on Twitter](https://twitter.com/dddice_app)
+- [Join the dddice subreddit](https://reddit.com/r/dddice)
+- [Subscribe to dddice on YouTube](https://www.youtube.com/channel/UC8OaoMy-oFAvebUi_rOc1dQ)
+- [Follow dddice on Twitch](https://www.twitch.tv/dddice_app)
 
 ## Documentation and API
 
@@ -37,7 +48,7 @@ git clone git@github.com:dddice/dddice-foundry-plugin.git
 # Install dependencies
 npm i
 
-# Start the browser extension
+# Start the package bundler
 npm run start
 ```
 
