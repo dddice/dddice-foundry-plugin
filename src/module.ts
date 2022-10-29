@@ -186,9 +186,8 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   }
 });
 
-Hooks.on('createChatMessage', chatMessage => {
+Hooks.on('createChatMessage', async chatMessage => {
   log.debug('calling Create Chat Message hook', chatMessage);
-
   // massage v9 and v10
   const rolls =
     chatMessage?.rolls?.length > 0
@@ -197,23 +196,26 @@ Hooks.on('createChatMessage', chatMessage => {
       ? [chatMessage.roll]
       : null;
   if (rolls?.length > 0) {
-    const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
-    log.debug('formatted dddice roll', dddiceRoll);
-    if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
-      (window as any).api
-        .roll()
-        .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
-      // hide the message because it will get created later by the dddice roll complete
-      if (game.settings.get('dddice', 'render mode') === 'on') {
-        chatMessage._dddice_hide = true;
-      }
+    // remove the sound v10
+    mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
 
-      // remove the sound v10
-      mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
+    // remove the sound v9
+    if (chatMessage.data) {
+      mergeObject(chatMessage.data, { '-=sound': null });
+    }
 
-      // remove the sound v9
-      if (chatMessage.data) {
-        mergeObject(chatMessage.data, { '-=sound': null });
+    if (!chatMessage.flags?.dddice?.rollId) {
+      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
+      log.debug('formatted dddice roll', dddiceRoll);
+      if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
+        if (game.settings.get('dddice', 'render mode') === 'on') {
+          chatMessage._dddice_hide = true;
+        }
+        const dddiceRollResponse: IRoll = await (window as any).api
+          .roll()
+          .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
+
+        chatMessage._dddiceRollId = dddiceRollResponse.uuid;
       }
     }
   }
@@ -248,44 +250,67 @@ const notConnectedMessage = () => {
   }
 };
 
-const updateChat = (roll: IRoll) => {
+const updateChat = async (roll: IRoll) => {
   log.debug(roll);
-  if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
-    const dieEquation = Object.entries(
-      roll.values
-        .filter(die => !die.is_dropped)
-        .reduce((prev, current) => {
-          if (prev[current.type]) {
-            prev[current.type] += current.type === 'mod' ? current.value : 1;
-          } else {
-            prev[current.type] = current.type === 'mod' ? current.value : 1;
-          }
-          return prev;
-        }, {}),
-    ).reduce(
-      (prev, [type, count]) =>
-        prev + (prev !== '' && count >= 0 ? '+' : '') + count + (type !== 'mod' ? type : ''),
-      '',
+
+  const chatMessages = game.messages?.filter(
+    chatMessage => chatMessage._dddiceRollId === roll.uuid,
+  );
+  if (chatMessages && chatMessages.length > 0) {
+    chatMessages?.forEach(chatMessage => {
+      $(`[data-message-id=${chatMessage.id}]`).removeClass('hidden');
+      chatMessage._dddice_hide = false;
+    });
+    window.ui.chat.scrollBottom({ popout: true });
+  } else if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
+    log.debug('roll.uuid', roll.uuid);
+    const foundryVttRoll = Roll.fromTerms(convertDddiceRollModelToFVTTRollModel(roll));
+    await foundryVttRoll.toMessage(
+      {
+        user: game.user._id,
+        flags: { dddice: { rollId: roll.uuid } },
+      },
+      { create: true },
     );
-
-    const data = {
-      content: `<div class="dice-roll">
-    <div class="dice-result">
-        <div class="dice-formula">${dieEquation}</div>
-        <h4 class="dice-total">${roll.total_value}</h4>
-    </div>
-</div>`,
-      user: game.user._id,
-      speaker: 'Celeste Bloodreign',
-      type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-    };
-
-    if (!foundry.utils.isNewerVersion(game.version, 10)) {
-      data['roll'] = new Roll();
-    }
-
-    ChatMessage.create(data);
   }
+};
+
+const convertDddiceRollModelToFVTTRollModel = (dddiceRolls: IRoll) => {
+  const fvttRollTerms = Object.entries(
+    dddiceRolls.values
+      .filter(die => !die.is_dropped)
+      .reduce((prev, current) => {
+        if (prev[current.type]) {
+          prev[current.type] = {
+            values: [...prev[current.type].values, current.value],
+            count: prev[current.type].count + (current.type === 'mod' ? current.vaule : 1),
+          };
+        } else {
+          prev[current.type] = {
+            values: [current.value],
+            count: current.type === 'mod' ? current.value : 1,
+          };
+        }
+        return prev;
+      }, {}),
+  ).reduce((prev: DiceTerm[], [type, { count, values }]) => {
+    if (type === 'mod') {
+      prev.push(new OperatorTerm({ operator: count >= 0 ? '+' : '-' }).evaluate());
+      prev.push(new NumericTerm({ number: count >= 0 ? count : -1 * count }).evaluate());
+    } else {
+      if (prev.length > 0) prev.push(new OperatorTerm({ operator: '+' }).evaluate());
+      prev.push(
+        Die.fromData({
+          faces: parseInt(type.substring(1)),
+          number: count,
+          results: values.map(value => ({ active: true, discarded: false, result: value })),
+        }),
+      );
+    }
+    return prev;
+  }, []);
+  log.debug('generated dice terms', fvttRollTerms);
+  return fvttRollTerms;
 };
 
 const convertFVTTRollModelToDddiceRollModel = (
@@ -313,9 +338,9 @@ const convertFVTTRollModelToDddiceRollModel = (
           .flatMap(term => {
             if (term instanceof DiceTerm) {
               return term.results.flatMap(result => {
-                if (term.modifiers.some(x => x === 'kh1' || x === 'kh') !== -1) {
+                if (term.modifiers.some(x => x === 'kh1' || x === 'kh')) {
                   operator = { k: 'h1' };
-                } else if (term.modifiers.some(x => x === 'kl1' || x === 'kl') !== -1) {
+                } else if (term.modifiers.some(x => x === 'kl1' || x === 'kl')) {
                   operator = { k: 'l1' };
                 }
                 if (term.faces === 100) {
