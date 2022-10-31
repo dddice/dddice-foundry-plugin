@@ -1,12 +1,16 @@
 /** @format */
-CONFIG.debug.hooks = true;
 import { ConfigPanel } from './module/ConfigPanel';
 import API from './module/api';
-import { IRoll, IUser } from 'dddice-js';
+import { IRoll } from 'dddice-js';
 import createLogger from './module/log';
+import {
+  convertDddiceRollModelToFVTTRollModel,
+  convertDiceSoNiceRollToDddiceRoll,
+  convertFVTTRollModelToDddiceRollModel,
+} from './module/rollFormatConverters';
+const log = createLogger('module');
 
 require('dddice-js');
-const log = createLogger('module');
 
 Hooks.once('init', async () => {
   (window as any).dddice = new (window as any).ThreeDDice();
@@ -75,35 +79,6 @@ Hooks.once('init', async () => {
   document.body.addEventListener('click', () => (window as any).dddice.clear());
 });
 
-async function setUpDddiceSdk() {
-  const apiKey = game.settings.get('dddice', 'apiKey') as string;
-  const room = game.settings.get('dddice', 'room') as string;
-  if (apiKey && room) {
-    try {
-      (window as any).api = new API(apiKey);
-      (window as any).api
-        .user()
-        .get()
-        .then(user => game.settings.set('dddice', 'user', user));
-      if (game.settings.get('dddice', 'render mode') === 'on') {
-        (window as any).dddice = (window as any).dddice.initialize(
-          document.getElementById('dddice-canvas'),
-          apiKey,
-        );
-        (window as any).dddice.start();
-        (window as any).dddice.connect(room);
-        (window as any).dddice.removeAction('roll:finished');
-        (window as any).dddice.addAction('roll:finished', roll => updateChat(roll));
-      }
-    } catch (e) {
-      console.error(e);
-      notConnectedMessage();
-    }
-  } else {
-    notConnectedMessage();
-  }
-}
-
 Hooks.once('ready', async () => {
   if (game.settings.get('dddice', 'render mode') === 'on') {
     // add canvas element to document
@@ -144,33 +119,6 @@ Hooks.once('ready', async () => {
     };
   }
 });
-
-function convertDiceSoNiceRollToDddiceRoll(roll, theme) {
-  let operator;
-  const dice = roll.dice.flatMap(term => {
-    return term.results.flatMap(result => {
-      if (term.modifiers.indexOf('kh1') !== -1) {
-        operator = { k: 'h1' };
-      } else if (term.modifiers.indexOf('kl1') !== -1) {
-        operator = { k: 'l1' };
-      }
-      if (term.faces === 100) {
-        return [
-          { type: `d10`, value: result.result % 10, theme },
-          {
-            type: `d10x`,
-            value: Math.floor(result.result / 10),
-            value_to_display: `${Math.floor(result.result / 10)}0`,
-            theme,
-          },
-        ];
-      } else {
-        return { type: `d${term.faces}`, value: result.result, theme };
-      }
-    });
-  });
-  return { operator, dice };
-}
 
 Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   log.debug('dice so nice roll start hook', messageId, rollData);
@@ -232,6 +180,35 @@ Hooks.on('renderChatMessage', (message, html, data) => {
   }
 });
 
+async function setUpDddiceSdk() {
+  const apiKey = game.settings.get('dddice', 'apiKey') as string;
+  const room = game.settings.get('dddice', 'room') as string;
+  if (apiKey && room) {
+    try {
+      (window as any).api = new API(apiKey);
+      (window as any).api
+        .user()
+        .get()
+        .then(user => game.settings.set('dddice', 'user', user));
+      if (game.settings.get('dddice', 'render mode') === 'on') {
+        (window as any).dddice = (window as any).dddice.initialize(
+          document.getElementById('dddice-canvas'),
+          apiKey,
+        );
+        (window as any).dddice.start();
+        (window as any).dddice.connect(room);
+        (window as any).dddice.removeAction('roll:finished');
+        (window as any).dddice.addAction('roll:finished', roll => updateChat(roll));
+      }
+    } catch (e) {
+      console.error(e);
+      notConnectedMessage();
+    }
+  } else {
+    notConnectedMessage();
+  }
+}
+
 const notConnectedMessage = () => {
   if ($(document).find('.dddice-settings-button').length === 0) {
     const message = {
@@ -278,97 +255,4 @@ const updateChat = async (roll: IRoll) => {
     );
     ChatMessage.implementation.createDocuments([message]);
   }
-};
-
-const convertDddiceRollModelToFVTTRollModel = (dddiceRolls: IRoll) => {
-  const fvttRollTerms = Object.entries(
-    dddiceRolls.values
-      .filter(die => !die.is_dropped)
-      .reduce((prev, current) => {
-        if (prev[current.type]) {
-          prev[current.type] = {
-            values: [...prev[current.type].values, current.value],
-            count: prev[current.type].count + (current.type === 'mod' ? current.vaule : 1),
-          };
-        } else {
-          prev[current.type] = {
-            values: [parseInt(current.value_to_display)],
-            count: current.type === 'mod' ? current.value : 1,
-          };
-        }
-        return prev;
-      }, {}),
-  ).reduce((prev: DiceTerm[], [type, { count, values }]) => {
-    if (type === 'mod') {
-      prev.push(new OperatorTerm({ operator: count >= 0 ? '+' : '-' }).evaluate());
-      prev.push(new NumericTerm({ number: count >= 0 ? count : -1 * count }).evaluate());
-    } else {
-      if (prev.length > 0) prev.push(new OperatorTerm({ operator: '+' }).evaluate());
-      prev.push(
-        Die.fromData({
-          faces: type === 'd10x' ? 100 : parseInt(type.substring(1)),
-          number: count,
-          results: values.map(value => ({ active: true, discarded: false, result: value })),
-        }),
-      );
-    }
-    return prev;
-  }, []);
-  log.debug('generated dice terms', fvttRollTerms);
-  return Roll.fromTerms(fvttRollTerms);
-};
-
-const convertFVTTRollModelToDddiceRollModel = (
-  fvttRolls: Roll[],
-): { dice: IRoll; operator: object } => {
-  const theme = game.settings.get('dddice', 'theme');
-  let operator;
-  return {
-    dice: fvttRolls
-      .flatMap(roll =>
-        roll.terms
-          .reduce((prev, next) => {
-            // reduce to combine operators + or - with the numeric term after them
-            if (next instanceof NumericTerm) {
-              if (prev.length > 0) {
-                const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
-                prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
-              }
-            } else {
-              prev.push(next);
-            }
-            return prev;
-          }, [])
-          .flatMap(term => {
-            if (term instanceof DiceTerm) {
-              return term.results.flatMap(result => {
-                if (term.modifiers.some(x => x === 'kh1' || x === 'kh')) {
-                  operator = { k: 'h1' };
-                } else if (term.modifiers.some(x => x === 'kl1' || x === 'kl')) {
-                  operator = { k: 'l1' };
-                }
-                if (term.faces === 100) {
-                  return [
-                    { type: `d10`, value: result.result % 10, theme },
-                    {
-                      type: `d10x`,
-                      value: Math.floor(result.result / 10),
-                      value_to_display: `${Math.floor(result.result / 10)}0`,
-                      theme,
-                    },
-                  ];
-                } else {
-                  return { type: `d${term.faces}`, value: result.result, theme };
-                }
-              });
-            } else if (term.type === 'mod') {
-              return term;
-            } else {
-              return null;
-            }
-          }),
-      )
-      .filter(i => i),
-    operator,
-  };
 };
