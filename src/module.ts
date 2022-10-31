@@ -251,8 +251,6 @@ const notConnectedMessage = () => {
 };
 
 const updateChat = async (roll: IRoll) => {
-  log.debug(roll);
-
   const chatMessages = game.messages?.filter(
     chatMessage => chatMessage._dddiceRollId === roll.uuid,
   );
@@ -262,16 +260,23 @@ const updateChat = async (roll: IRoll) => {
       chatMessage._dddice_hide = false;
     });
     window.ui.chat.scrollBottom({ popout: true });
-  } else if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
-    log.debug('roll.uuid', roll.uuid);
-    const foundryVttRoll = Roll.fromTerms(convertDddiceRollModelToFVTTRollModel(roll));
-    await foundryVttRoll.toMessage(
+  } else {
+    // if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
+    // whisper messages from external rolls to all connected parties
+    const foundryVttRoll = convertDddiceRollModelToFVTTRollModel(roll);
+    const message = await foundryVttRoll.toMessage(
       {
-        user: game.user._id,
+        speaker: {
+          alias: roll.room.participants.find(
+            participant => participant.user.uuid === roll.user.uuid,
+          ).username,
+        },
+        whisper: [game.user.id],
         flags: { dddice: { rollId: roll.uuid } },
       },
-      { create: true },
+      { create: false },
     );
+    ChatMessage.implementation.createDocuments([message]);
   }
 };
 
@@ -287,7 +292,7 @@ const convertDddiceRollModelToFVTTRollModel = (dddiceRolls: IRoll) => {
           };
         } else {
           prev[current.type] = {
-            values: [current.value],
+            values: [parseInt(current.value_to_display)],
             count: current.type === 'mod' ? current.value : 1,
           };
         }
@@ -301,7 +306,7 @@ const convertDddiceRollModelToFVTTRollModel = (dddiceRolls: IRoll) => {
       if (prev.length > 0) prev.push(new OperatorTerm({ operator: '+' }).evaluate());
       prev.push(
         Die.fromData({
-          faces: parseInt(type.substring(1)),
+          faces: type === 'd10x' ? 100 : parseInt(type.substring(1)),
           number: count,
           results: values.map(value => ({ active: true, discarded: false, result: value })),
         }),
@@ -310,13 +315,12 @@ const convertDddiceRollModelToFVTTRollModel = (dddiceRolls: IRoll) => {
     return prev;
   }, []);
   log.debug('generated dice terms', fvttRollTerms);
-  return fvttRollTerms;
+  return Roll.fromTerms(fvttRollTerms);
 };
 
 const convertFVTTRollModelToDddiceRollModel = (
   fvttRolls: Roll[],
 ): { dice: IRoll; operator: object } => {
-  log.debug(fvttRolls);
   const theme = game.settings.get('dddice', 'theme');
   let operator;
   return {
