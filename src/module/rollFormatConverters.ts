@@ -38,6 +38,9 @@ export function convertDiceSoNiceRollToDddiceRoll(
 }
 
 export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll {
+  const modifiers = dddiceRolls.operator
+    ? Object.entries(dddiceRolls.operator).map(([key, value]) => `${key}${value}`)
+    : [];
   const fvttRollTerms = Object.entries(
     dddiceRolls.values
       .filter(die => !die.is_dropped)
@@ -65,7 +68,12 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
         Die.fromData({
           faces: type === 'd10x' ? 100 : parseInt(type.substring(1)),
           number: count,
-          results: values.map(value => ({ active: true, discarded: false, result: value })),
+          modifiers,
+          results: values.map(value => ({
+            active: true,
+            discarded: false,
+            result: value,
+          })),
         }),
       );
     }
@@ -100,11 +108,19 @@ export function convertFVTTRollModelToDddiceRollModel(fvttRolls: Roll[]): {
           .flatMap(term => {
             if (term instanceof DiceTerm) {
               return term.results.flatMap(result => {
-                if (term.modifiers.some(x => x === 'kh1' || x === 'kh')) {
-                  operator = { k: 'h1' };
-                } else if (term.modifiers.some(x => x === 'kl1' || x === 'kl')) {
-                  operator = { k: 'l1' };
-                }
+                operator = term.modifiers.reduce((prev, current) => {
+                  const keep = current.match(/k(l|h)?(\d+)?/);
+                  if (keep.length == 3) {
+                    prev['k'] = `${keep[1]}${keep[2]}`;
+                  } else if (keep.length == 2) {
+                    prev['k'] = `${keep[1]}1`;
+                  } else if (keep.length == 1) {
+                    if (prev === 'k') {
+                      prev['k'] = 'h1';
+                    }
+                  }
+                  return prev;
+                }, {});
                 if (term.faces === 100) {
                   return [
                     { type: `d10`, value: result.result % 10, theme },

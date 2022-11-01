@@ -152,7 +152,7 @@ Hooks.on('createChatMessage', async chatMessage => {
       mergeObject(chatMessage.data, { '-=sound': null });
     }
 
-    if (!chatMessage.flags?.dddice?.rollId) {
+    if (!chatMessage.flags?.dddice?.rollId && !chatMessage?.data.flags?.dddice?.rollId) {
       const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
