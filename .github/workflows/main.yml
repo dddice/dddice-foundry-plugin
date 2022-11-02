@@ -72,3 +72,12 @@ jobs:
           artifacts: './dist/module.json, ./module.zip'
           tag: ${{ github.event.release.tag_name }}
           body: ${{ steps.release.outputs.RELEASE_BODY }}
+
+      - name: Publish to Foundry Admin
+        run: npx @ghost-fvtt/foundry-publish
+        env:
+          FVTT_MANIFEST_PATH: ./dist/module.json
+          FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
+          FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
+          FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
+          FVTT_DELETE_OBSOLETE_VERSIONS: false
