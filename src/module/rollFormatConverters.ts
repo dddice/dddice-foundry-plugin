@@ -38,47 +38,57 @@ export function convertDiceSoNiceRollToDddiceRoll(
 }
 
 export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll {
+  interface DieAggregation {
+    count: number;
+    values: number[];
+    themes: string[];
+  }
   const modifiers = dddiceRolls.operator
     ? Object.entries(dddiceRolls.operator).map(([key, value]) => `${key}${value}`)
     : [];
   const fvttRollTerms = Object.entries(
-    dddiceRolls.values
-      .filter(die => !die.is_dropped)
-      .reduce((prev, current) => {
-        if (prev[current.type]) {
-          prev[current.type] = {
-            values: [...prev[current.type].values, current.value],
-            count: prev[current.type].count + (current.type === 'mod' ? current.vaule : 1),
-          };
-        } else {
-          prev[current.type] = {
-            values: [parseInt(current.value_to_display)],
-            count: current.type === 'mod' ? current.value : 1,
-          };
-        }
-        return prev;
-      }, {}),
-  ).reduce((prev: DiceTerm[], [type, { count, values }]) => {
-    if (type === 'mod') {
-      prev.push(new OperatorTerm({ operator: count >= 0 ? '+' : '-' }).evaluate());
-      prev.push(new NumericTerm({ number: count >= 0 ? count : -1 * count }).evaluate());
-    } else {
-      if (prev.length > 0) prev.push(new OperatorTerm({ operator: '+' }).evaluate());
-      prev.push(
-        Die.fromData({
-          faces: type === 'd10x' ? 100 : parseInt(type.substring(1)),
-          number: count,
-          modifiers,
-          results: values.map(value => ({
-            active: true,
-            discarded: false,
-            result: value,
-          })),
-        }),
-      );
-    }
-    return prev;
-  }, []);
+    dddiceRolls.values.reduce((prev, current): { [id: string]: DieAggregation } => {
+      if (prev[current.type]) {
+        prev[current.type] = {
+          values: [...prev[current.type].values, parseInt(current.value_to_display)],
+          count: prev[current.type].count + (current.type === 'mod' ? current.vaule : 1),
+          themes: [...prev[current.type].themes, current.theme],
+        };
+      } else {
+        prev[current.type] = {
+          values: [parseInt(current.value_to_display)],
+          count: current.type === 'mod' ? current.value : 1,
+          themes: [current.theme],
+        };
+      }
+      return prev;
+    }, {}),
+  ).reduce(
+    //@ts-ignore
+    (prev: DiceTerm[], [type, { count, values, themes }]: [string, DieAggregation]): DiceTerm[] => {
+      if (type === 'mod') {
+        prev.push(new OperatorTerm({ operator: count >= 0 ? '+' : '-' }).evaluate());
+        prev.push(new NumericTerm({ number: count >= 0 ? count : -1 * count }).evaluate());
+      } else {
+        if (prev.length > 0) prev.push(new OperatorTerm({ operator: '+' }).evaluate());
+        prev.push(
+          Die.fromData({
+            faces: type === 'd10x' ? 100 : parseInt(type.substring(1)),
+            number: count,
+            options: { appearance: { colorset: themes } },
+            modifiers,
+            results: values.map(value => ({
+              active: true,
+              discarded: false,
+              result: value,
+            })),
+          }),
+        );
+      }
+      return prev;
+    },
+    [],
+  );
   log.debug('generated dice terms', fvttRollTerms);
   return Roll.fromTerms(fvttRollTerms);
 }

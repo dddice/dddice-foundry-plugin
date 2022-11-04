@@ -197,8 +197,13 @@ async function setUpDddiceSdk() {
         );
         (window as any).dddice.start();
         (window as any).dddice.connect(room);
+        (window as any).dddice.on('RollCreateEvent', () => null);
         (window as any).dddice.removeAction('roll:finished');
         (window as any).dddice.addAction('roll:finished', roll => updateChat(roll));
+      } else {
+        (window as any).dddice.api = new (window as any).ThreeDDiceAPI(apiKey);
+        (window as any).dddice.api.connect(room);
+        (window as any).dddice.api.listen('RollCreateEvent', roll => updateChat(roll.data));
       }
     } catch (e) {
       console.error(e);
@@ -240,7 +245,7 @@ const updateChat = async (roll: IRoll) => {
   } else {
     // if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
     // whisper messages from external rolls to all connected parties
-    const foundryVttRoll = convertDddiceRollModelToFVTTRollModel(roll);
+    const foundryVttRoll: Roll = convertDddiceRollModelToFVTTRollModel(roll);
     const message = await foundryVttRoll.toMessage(
       {
         speaker: {
