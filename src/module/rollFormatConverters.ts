@@ -1,6 +1,6 @@
 /** @format */
 
-import { IRoll } from 'dddice-js';
+import { IRoll, IRollValue } from 'dddice-js';
 import createLogger from '../module/log';
 const log = createLogger('module');
 
@@ -50,13 +50,13 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
     dddiceRolls.values.reduce((prev, current): { [id: string]: DieAggregation } => {
       if (prev[current.type]) {
         prev[current.type] = {
-          values: [...prev[current.type].values, parseInt(current.value_to_display)],
+          values: [...prev[current.type].values, current],
           count: prev[current.type].count + (current.type === 'mod' ? current.vaule : 1),
           themes: [...prev[current.type].themes, current.theme],
         };
       } else {
         prev[current.type] = {
-          values: [parseInt(current.value_to_display)],
+          values: [current],
           count: current.type === 'mod' ? current.value : 1,
           themes: [current.theme],
         };
@@ -77,10 +77,10 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
             number: count,
             options: { appearance: { colorset: themes } },
             modifiers,
-            results: values.map(value => ({
+            results: values.map((value: IRollValue) => ({
               active: true,
-              discarded: false,
-              result: value,
+              discarded: value.is_dropped,
+              result: parseInt(value.value_to_display),
             })),
           }),
         );
