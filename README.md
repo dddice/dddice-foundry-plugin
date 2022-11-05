@@ -31,7 +31,7 @@ dddice and Dice So Nice play very well together. Roll your favorite dice using D
 dddice is built with our community in mind! We are extremely interested in your feedback. Interested in connecting with us?
 
 - [Become a backer on Patreon](https://www.patreon.com/dddice)
-- [Join the dddice Discord Server](https://discord.gg/NsNnd8xQ6K)
+- [Join the dddice Discord Server](https://discord.gg/VzHq5TfAr6)
 - [Follow dddice on Twitter](https://twitter.com/dddice_app)
 - [Join the dddice subreddit](https://reddit.com/r/dddice)
 - [Subscribe to dddice on YouTube](https://www.youtube.com/channel/UC8OaoMy-oFAvebUi_rOc1dQ)
