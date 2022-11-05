@@ -15,6 +15,17 @@ Roll 3D dice from Foundry VTT! Integrates [dddice](https://dddice.com) with Foun
 
 For more information, visit the official [dddice homepage](https://dddice.com?ref=foundry).
 
+## Can I use dddice and Dice So Nice together?
+
+**Yes!**
+
+dddice and Dice So Nice play very well together. Roll your favorite dice using Dice So Nice and let dddice handle the synchronization features that let you roll on platforms such as D&D Beyond and more.
+
+1. Install and enable both dddice and Dice So Nice.
+2. In the module settings of dddice set `Render Mode` to `off`. This lets Dice So Nice handle Foundry VTT animations.
+3. dddice will pick up the rolls and send it to anyone else that is connected to the same dddice room.
+
+**Caveat**: Your Dice So Nice themes won't show up externally; the dddice theme you selected during configuration will be used instead. Similarly, rolls made outside of Foundry VTT will show up in your instance and be handed off to Dice So Nice to be rolled with the theme selected in your Dice So Nice configs.
 ## Feedback
 
 dddice is built with our community in mind! We are extremely interested in your feedback. Interested in connecting with us?
