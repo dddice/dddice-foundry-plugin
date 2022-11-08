@@ -29,12 +29,12 @@
     }
   ],
   "url": "This is auto replaced",
-  "manifest": "This is auto replaced",
+  "manifest": "https://github.com/dddice/dddice-foundry-plugin/releases/latest/dowload/module.json",
   "download": "This is auto replaced",
   "media": [
     {
       "type": "icon",
-      "url": "https://avatars2.githubusercontent.com/u/71292812?s=400&u=ccdb4eeb7abf551ca8f314e5a9bfd0479a4d3d41&v=4"
+      "url": "https://cdn.dddice.com/images/press-kit/logo-dark.svg"
     }
   ]
 }
