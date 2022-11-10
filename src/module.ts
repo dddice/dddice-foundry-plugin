@@ -157,13 +157,13 @@ Hooks.on('createChatMessage', async chatMessage => {
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
         if (game.settings.get('dddice', 'render mode') === 'on') {
-          chatMessage._dddice_hide = true;
+          chatMessage.setFlag('dddice', 'hide', true);
         }
         const dddiceRollResponse: IRoll = await (window as any).api
           .roll()
           .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
 
-        chatMessage._dddiceRollId = dddiceRollResponse.uuid;
+        await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
       }
     }
   }
@@ -175,7 +175,7 @@ Hooks.on('updateChatMessage', (message, updateData, options) => {
 
 // add css to hide roll messages about to be deleted to prevent flicker
 Hooks.on('renderChatMessage', (message, html, data) => {
-  if (message._dddice_hide) {
+  if (message.getFlag('dddice', 'hide')) {
     html.addClass('hidden');
   }
 });
@@ -197,13 +197,13 @@ async function setUpDddiceSdk() {
         );
         (window as any).dddice.start();
         (window as any).dddice.connect(room);
-        (window as any).dddice.on('RollCreateEvent', () => null);
+        (window as any).dddice.on('RollCreateEvent', roll => rollCreated(roll.data));
         (window as any).dddice.removeAction('roll:finished');
-        (window as any).dddice.addAction('roll:finished', roll => updateChat(roll));
+        (window as any).dddice.addAction('roll:finished', roll => rollFinished(roll));
       } else {
         (window as any).dddice.api = new (window as any).ThreeDDiceAPI(apiKey);
         (window as any).dddice.api.connect(room);
-        (window as any).dddice.api.listen('RollCreateEvent', roll => updateChat(roll.data));
+        (window as any).dddice.api.listen('RollCreateEvent', roll => rollCreated(roll.data));
       }
     } catch (e) {
       console.error(e);
@@ -232,19 +232,15 @@ const notConnectedMessage = () => {
   }
 };
 
-const updateChat = async (roll: IRoll) => {
+const rollCreated = async (roll: IRoll) => {
   const chatMessages = game.messages?.filter(
-    chatMessage => chatMessage._dddiceRollId === roll.uuid,
+    chatMessage => chatMessage.getFlag('dddice', 'rollId') === roll.uuid,
   );
-  if (chatMessages && chatMessages.length > 0) {
-    chatMessages?.forEach(chatMessage => {
-      $(`[data-message-id=${chatMessage.id}]`).removeClass('hidden');
-      chatMessage._dddice_hide = false;
-    });
-    window.ui.chat.scrollBottom({ popout: true });
-  } else {
-    // if (roll.user.uuid === (game.settings.get('dddice', 'user') as IUser).uuid) {
-    // whisper messages from external rolls to all connected parties
+  // if chat message doesn't exist, (for example a roll outside foundry) then add it in
+  if (
+    [...game.users.values()].filter(user => user.active)[0].isSelf &&
+    (!chatMessages || chatMessages.length == 0)
+  ) {
     const foundryVttRoll: Roll = convertDddiceRollModelToFVTTRollModel(roll);
     const message = await foundryVttRoll.toMessage(
       {
@@ -253,11 +249,28 @@ const updateChat = async (roll: IRoll) => {
             participant => participant.user.uuid === roll.user.uuid,
           ).username,
         },
-        whisper: [game.user.id],
-        flags: { dddice: { rollId: roll.uuid } },
+        flags: {
+          dddice: {
+            rollId: roll.uuid,
+            hide: game.settings.get('dddice', 'render mode') === 'on',
+          },
+        },
       },
       { create: false },
     );
     ChatMessage.implementation.createDocuments([message]);
+  }
+};
+
+const rollFinished = async (roll: IRoll) => {
+  const chatMessages = game.messages?.filter(
+    chatMessage => chatMessage.getFlag('dddice', 'rollId') === roll.uuid,
+  );
+  if (chatMessages && chatMessages.length > 0) {
+    chatMessages?.forEach(chatMessage => {
+      $(`[data-message-id=${chatMessage.id}]`).removeClass('hidden');
+      chatMessage.setFlag('dddice', 'hide', false);
+    });
+    window.ui.chat.scrollBottom({ popout: true });
   }
 };

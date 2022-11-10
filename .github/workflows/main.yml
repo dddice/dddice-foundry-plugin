@@ -79,13 +79,13 @@ jobs:
           tag: ${{ github.event.release.tag_name }}
           body: ${{ steps.release.outputs.RELEASE_BODY }}
 
-      - name: Publish to Foundry Admin
-        run: npx @ghost-fvtt/foundry-publish
-        env:
-          FVTT_MANIFEST_PATH: ./dist/module.json
-          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json
-          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{github.event.release.tag_name}}
-          FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
-          FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
-          FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
-          FVTT_DELETE_OBSOLETE_VERSIONS: false
+#      - name: Publish to Foundry Admin
+#        run: npx @ghost-fvtt/foundry-publish
+#        env:
+#          FVTT_MANIFEST_PATH: ./dist/module.json
+#          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json
+#          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{github.event.release.tag_name}}
+#          FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
+#          FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
+#          FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
+#          FVTT_DELETE_OBSOLETE_VERSIONS: false
