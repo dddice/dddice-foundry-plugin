@@ -17,7 +17,7 @@
   "author": "dddice <developers@dddice.com>",
   "private": true,
   "scripts": {
-    "start": "parcel",
+    "start": "parcel --dist-dir=data/Data/modules/dddice",
     "build": "parcel build",
     "lint": "eslint src"
   },

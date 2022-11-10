@@ -61,6 +61,16 @@ git clone git@github.com:dddice/dddice-foundry-plugin.git
 # Install dependencies
 npm i
 
+# add your Foundry VTT credentials to the environment
+export FOUNDRY_USERNAME=<your_user_name_goes_here>
+export FOUNDRY_PASSWORD=<your_password_goes_here>
+
+# (optional) Use Docker to start foundry
+docker compose up v10 #or v9 if you prefer
+
+# (if you are using docker) Grant access to the module dir / build output dir
+sudo chmod 777 data/Data/modules
+
 # Start the package bundler
 npm run start
 ```
