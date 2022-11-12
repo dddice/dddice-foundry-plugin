@@ -45,16 +45,6 @@ Hooks.once('init', async () => {
     default: '',
     type: String,
     config: false,
-    onChange: setUpDddiceSdk,
-  });
-
-  game.settings.register('dddice', 'user', {
-    name: 'dddice user',
-    hint: '',
-    scope: 'client',
-    default: '',
-    type: Object,
-    config: false,
   });
 
   game.settings.register('dddice', 'room', {
@@ -64,7 +54,7 @@ Hooks.once('init', async () => {
     type: String,
     default: '',
     config: false,
-    onChange: setUpDddiceSdk,
+    onChange: () => window.location.reload(),
   });
 
   game.settings.register('dddice', 'theme', {
@@ -181,6 +171,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
 });
 
 function setUpDddiceSdk() {
+  log.info('setting up dddice sdk');
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
   const room = game.settings.get('dddice', 'room') as string;
   if (apiKey && room) {
@@ -191,7 +182,7 @@ function setUpDddiceSdk() {
         .get()
         .then(user => game.user?.setFlag('dddice', 'user', user));
       if (game.settings.get('dddice', 'render mode') === 'on') {
-        (window as any).dddice = (window as any).dddice.initialize(
+        (window as any).dddice = new (window as any).ThreeDDice(
           document.getElementById('dddice-canvas'),
           apiKey,
         );
@@ -201,6 +192,7 @@ function setUpDddiceSdk() {
         (window as any).dddice.removeAction('roll:finished');
         (window as any).dddice.addAction('roll:finished', roll => rollFinished(roll));
       } else {
+        (window as any).dddice = new (window as any).ThreeDDice();
         (window as any).dddice.api = new (window as any).ThreeDDiceAPI(apiKey);
         (window as any).dddice.api.connect(room);
         (window as any).dddice.api.listen('RollCreateEvent', roll => rollCreated(roll.data));
