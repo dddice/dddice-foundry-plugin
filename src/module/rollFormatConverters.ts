@@ -4,6 +4,18 @@ import { IRoll, IRollValue } from 'dddice-js';
 import createLogger from '../module/log';
 const log = createLogger('module');
 
+function convertD100toD10x(theme, value) {
+  return [
+    {
+      theme,
+      type: 'd10x',
+      value: Math.ceil(value / 10 - 1) === 0 ? 10 : Math.ceil(value / 10 - 1),
+      value_to_display: `${Math.ceil(value / 10 - 1) * 10}`,
+    },
+    { theme, type: 'd10', value: ((value - 1) % 10) + 1 },
+  ];
+}
+
 export function convertDiceSoNiceRollToDddiceRoll(
   roll,
   theme,
@@ -20,15 +32,7 @@ export function convertDiceSoNiceRollToDddiceRoll(
         operator = { k: 'l1' };
       }
       if (term.faces === 100) {
-        return [
-          { type: `d10`, value: result.result % 10, theme },
-          {
-            type: `d10x`,
-            value: Math.floor(result.result / 10),
-            value_to_display: `${Math.floor(result.result / 10)}0`,
-            theme,
-          },
-        ];
+        return convertD100toD10x(theme, result.result);
       } else {
         return { type: `d${term.faces}`, value: result.result, theme };
       }
@@ -132,15 +136,7 @@ export function convertFVTTRollModelToDddiceRollModel(fvttRolls: Roll[]): {
                   return prev;
                 }, {});
                 if (term.faces === 100) {
-                  return [
-                    { type: `d10`, value: result.result % 10, theme },
-                    {
-                      type: `d10x`,
-                      value: Math.floor(result.result / 10),
-                      value_to_display: `${Math.floor(result.result / 10)}0`,
-                      theme,
-                    },
-                  ];
+                  return convertD100toD10x(theme, result.result);
                 } else {
                   return { type: `d${term.faces}`, value: result.result, theme };
                 }
