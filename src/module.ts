@@ -66,7 +66,11 @@ Hooks.once('init', async () => {
     config: false,
   });
 
-  document.body.addEventListener('click', () => (window as any).dddice.clear());
+  document.body.addEventListener('click', () => {
+    if (!(window as any).dddice.isDiceThrowing) {
+      (window as any).dddice.clear();
+    }
+  });
 });
 
 Hooks.once('ready', async () => {
