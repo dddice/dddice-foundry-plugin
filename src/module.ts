@@ -1,6 +1,6 @@
 /** @format */
 import { ConfigPanel } from './module/ConfigPanel';
-import API from './module/api';
+import API, { IUser } from './module/api';
 import { IRoll } from 'dddice-js';
 import createLogger from './module/log';
 import {
@@ -180,7 +180,7 @@ Hooks.on('renderChatMessage', (message, html, data) => {
   }
 });
 
-async function setUpDddiceSdk() {
+function setUpDddiceSdk() {
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
   const room = game.settings.get('dddice', 'room') as string;
   if (apiKey && room) {
@@ -189,7 +189,7 @@ async function setUpDddiceSdk() {
       (window as any).api
         .user()
         .get()
-        .then(user => game.settings.set('dddice', 'user', user));
+        .then(user => game.user?.setFlag('dddice', 'user', user));
       if (game.settings.get('dddice', 'render mode') === 'on') {
         (window as any).dddice = (window as any).dddice.initialize(
           document.getElementById('dddice-canvas'),
@@ -237,28 +237,44 @@ const rollCreated = async (roll: IRoll) => {
     chatMessage => chatMessage.getFlag('dddice', 'rollId') === roll.uuid,
   );
   // if chat message doesn't exist, (for example a roll outside foundry) then add it in
-  if (
-    [...game.users.values()].filter(user => user.active)[0].isSelf &&
-    (!chatMessages || chatMessages.length == 0)
-  ) {
-    const foundryVttRoll: Roll = convertDddiceRollModelToFVTTRollModel(roll);
-    const message = await foundryVttRoll.toMessage(
-      {
-        speaker: {
-          alias: roll.room.participants.find(
-            participant => participant.user.uuid === roll.user.uuid,
-          ).username,
-        },
-        flags: {
-          dddice: {
-            rollId: roll.uuid,
-            hide: game.settings.get('dddice', 'render mode') === 'on',
+  if (!chatMessages || chatMessages.length == 0) {
+    let shouldIMakeTheChat = false;
+
+    // If I made the roll outside of foundry
+    if (roll.user.uuid === (game.user?.getFlag('dddice', 'user') as IUser).uuid)
+      // I should make the chat
+      shouldIMakeTheChat = true;
+    if (
+      // I am active user 0
+      [...game.users.values()].filter(user => user.active)[0].isSelf &&
+      // and user who made the roll in dddice isn't connected to the game
+      [...game.users.values()].filter(
+        user => user.active && (user.getFlag('dddice', 'user') as IUser).uuid === roll.user.uuid,
+      ).length === 0
+    ) {
+      // then I should roll on their behalf
+      shouldIMakeTheChat = true;
+    }
+
+    if (shouldIMakeTheChat) {
+      const foundryVttRoll: Roll = convertDddiceRollModelToFVTTRollModel(roll);
+      await foundryVttRoll.toMessage(
+        {
+          speaker: {
+            alias: roll.room.participants.find(
+              participant => participant.user.uuid === roll.user.uuid,
+            ).username,
+          },
+          flags: {
+            dddice: {
+              rollId: roll.uuid,
+              hide: game.settings.get('dddice', 'render mode') === 'on',
+            },
           },
         },
-      },
-      { create: false },
-    );
-    ChatMessage.implementation.createDocuments([message]);
+        { create: true },
+      );
+    }
   }
 };
 

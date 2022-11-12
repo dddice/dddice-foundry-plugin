@@ -69,7 +69,7 @@ export FOUNDRY_PASSWORD=<your_password_goes_here>
 docker compose up v10 #or v9 if you prefer
 
 # (if you are using docker) Grant access to the module dir / build output dir
-sudo chmod 777 data/Data/modules
+sudo chmod -R 777 data/Data/modules
 
 # Start the package bundler
 npm run start
