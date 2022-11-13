@@ -146,18 +146,24 @@ Hooks.on('createChatMessage', async chatMessage => {
       mergeObject(chatMessage.data, { '-=sound': null });
     }
 
+    if (game.settings.get('dddice', 'render mode') === 'on') {
+      chatMessage._dddice_hide = true;
+    }
+
     if (!chatMessage.flags?.dddice?.rollId && !chatMessage?.data.flags?.dddice?.rollId) {
       const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
-        if (game.settings.get('dddice', 'render mode') === 'on') {
-          chatMessage.setFlag('dddice', 'hide', true);
-        }
-        const dddiceRollResponse: IRoll = await (window as any).api
-          .roll()
-          .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
+        try {
+          const dddiceRollResponse: IRoll = await (window as any).api
+            .roll()
+            .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
 
-        await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
+          await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
+        } catch (e) {
+          console.error(e);
+          chatMessage._dddice_hide = false;
+        }
       }
     }
   }
@@ -169,7 +175,7 @@ Hooks.on('updateChatMessage', (message, updateData, options) => {
 
 // add css to hide roll messages about to be deleted to prevent flicker
 Hooks.on('renderChatMessage', (message, html, data) => {
-  if (message.getFlag('dddice', 'hide')) {
+  if (message._dddice_hide) {
     html.addClass('hidden');
   }
 });
@@ -264,7 +270,6 @@ const rollCreated = async (roll: IRoll) => {
           flags: {
             dddice: {
               rollId: roll.uuid,
-              hide: game.settings.get('dddice', 'render mode') === 'on',
             },
           },
         },
@@ -281,7 +286,7 @@ const rollFinished = async (roll: IRoll) => {
   if (chatMessages && chatMessages.length > 0) {
     chatMessages?.forEach(chatMessage => {
       $(`[data-message-id=${chatMessage.id}]`).removeClass('hidden');
-      chatMessage.setFlag('dddice', 'hide', false);
+      chatMessage._dddice_hide = false;
     });
     window.ui.chat.scrollBottom({ popout: true });
   }
