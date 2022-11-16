@@ -1,6 +1,6 @@
 /** @format */
 
-import API, { IRoom, ITheme } from './api';
+import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
 
 export class ConfigPanel extends FormApplication {
   private configOptions: any;
@@ -14,7 +14,7 @@ export class ConfigPanel extends FormApplication {
   constructor(configOptions) {
     super();
     this.configOptions = configOptions;
-    const apiKey = game.settings.get('dddice', 'apiKey');
+    const apiKey: string = game.settings.get('dddice', 'apiKey') as string;
     if (apiKey) {
       this.connectToDddice(apiKey);
     }
@@ -56,7 +56,7 @@ export class ConfigPanel extends FormApplication {
     };
   }
 
-  protected async _updateObject(event: Event, formData: object | undefined): Promise<unknown> {
+  protected async _updateObject(event: Event, formData: object | undefined) {
     if (formData && event.submitter.id === 'dddice-connect-button') {
       await this.connectToDddice(formData['dddice-apiKey']);
     } else if (formData) {
@@ -79,13 +79,15 @@ export class ConfigPanel extends FormApplication {
       this.connected = false;
       this.render();
       await game.settings.set('dddice', 'apiKey', apiKey);
-      const api = new API(apiKey);
-      let themes;
-      [this.rooms, themes] = await Promise.all([api.room().list(), api.diceBox().list()]);
-      this.rooms = this.rooms.sort((a, b) => a.name.localeCompare(b.name));
-      while (themes) {
-        this.themes = [...this.themes, ...themes].sort((a, b) => a.name.localeCompare(b.name));
-        themes = await api.diceBox().next();
+      const api = new ThreeDDiceAPI(apiKey);
+      // eslint-disable-next-line prefer-const
+      let [_rooms, themes] = await Promise.all([api.room.list(), api.diceBox.list()]);
+      this.rooms = _rooms.data.sort((a, b) => a.name.localeCompare(b.name));
+      while (themes?.data) {
+        this.themes = [...this.themes, ...themes.data].sort((a, b) =>
+          a?.name ? a.name.localeCompare(b?.name) : 0,
+        );
+        themes = await api.diceBox.next();
       }
       this.statusColor = 'text-success';
       this.connectionStatus = 'successfully connected to dddice';

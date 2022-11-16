@@ -1,6 +1,6 @@
 /** @format */
 
-import { IRoll, IRollValue } from 'dddice-js';
+import { IDiceRoll, IRoll, IRollValue } from 'dddice-js';
 import createLogger from '../module/log';
 const log = createLogger('module');
 
@@ -20,7 +20,7 @@ export function convertDiceSoNiceRollToDddiceRoll(
   roll,
   theme,
 ): {
-  dice: IRoll;
+  dice: IDiceRoll[];
   operator: object;
 } {
   let operator;
@@ -98,7 +98,7 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
 }
 
 export function convertFVTTRollModelToDddiceRollModel(fvttRolls: Roll[]): {
-  dice: IRoll;
+  dice: IDiceRoll[];
   operator: object;
 } {
   const theme = game.settings.get('dddice', 'theme');

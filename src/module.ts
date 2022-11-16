@@ -1,13 +1,13 @@
 /** @format */
 import { ConfigPanel } from './module/ConfigPanel';
-import API, { IUser } from './module/api';
-import { IRoll } from 'dddice-js';
+import { IRoll, ThreeDDice, ThreeDDiceAPI, ThreeDDiceRollEvent, IUser } from 'dddice-js';
 import createLogger from './module/log';
 import {
   convertDddiceRollModelToFVTTRollModel,
   convertDiceSoNiceRollToDddiceRoll,
   convertFVTTRollModelToDddiceRollModel,
 } from './module/rollFormatConverters';
+
 const log = createLogger('module');
 
 require('dddice-js');
@@ -105,9 +105,10 @@ Hooks.once('ready', async () => {
       showForRoll: (...args) => {
         log.debug('steal show for roll', ...args);
         const theme = game.settings.get('dddice', 'theme');
-        (window as any).api.roll().create({
-          ...convertDiceSoNiceRollToDddiceRoll(args[0], theme),
+        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme);
+        (window as any).api.roll.create(dddiceRoll.dice, {
           room: game.settings.get('dddice', 'room'),
+          operator: dddiceRoll.operator,
         });
       },
     };
@@ -121,9 +122,10 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   // and send it to the api
   if (!messageId) {
     const theme = game.settings.get('dddice', 'theme');
-    (window as any).api.roll().create({
-      ...convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme),
+    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme);
+    (window as any).api.roll.create(dddiceRoll.dice, {
       room: game.settings.get('dddice', 'room'),
+      operator: dddiceRoll.operator,
     });
   }
 });
@@ -155,9 +157,12 @@ Hooks.on('createChatMessage', async chatMessage => {
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
         try {
-          const dddiceRollResponse: IRoll = await (window as any).api
-            .roll()
-            .create({ ...dddiceRoll, room: game.settings.get('dddice', 'room') });
+          const dddiceRollResponse: IRoll = (
+            await (window as any).api.roll.create(dddiceRoll.dice, {
+              room: game.settings.get('dddice', 'room'),
+              operator: dddiceRoll.operator,
+            })
+          ).data;
 
           await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
         } catch (e) {
@@ -186,26 +191,31 @@ function setUpDddiceSdk() {
   const room = game.settings.get('dddice', 'room') as string;
   if (apiKey && room) {
     try {
-      (window as any).api = new API(apiKey);
-      (window as any).api
-        .user()
-        .get()
-        .then(user => game.user?.setFlag('dddice', 'user', user));
-      if (game.settings.get('dddice', 'render mode') === 'on') {
-        (window as any).dddice = new (window as any).ThreeDDice(
-          document.getElementById('dddice-canvas'),
-          apiKey,
-        );
+      (window as any).api = new ThreeDDiceAPI(apiKey);
+      (window as any).api.user.get().then(user => game.user?.setFlag('dddice', 'user', user));
+
+      const canvas: HTMLCanvasElement = document.getElementById(
+        'dddice-canvas',
+      ) as HTMLCanvasElement;
+
+      if (game.settings.get('dddice', 'render mode') === 'on' && canvas) {
+        (window as any).dddice = new ThreeDDice(canvas, apiKey);
         (window as any).dddice.start();
         (window as any).dddice.connect(room);
-        (window as any).dddice.on('RollCreateEvent', roll => rollCreated(roll.data));
-        (window as any).dddice.removeAction('roll:finished');
-        (window as any).dddice.addAction('roll:finished', roll => rollFinished(roll));
+        (window as any).dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
+          rollCreated(roll),
+        );
+        (window as any).dddice.off(ThreeDDiceRollEvent.RollFinished);
+        (window as any).dddice.on(ThreeDDiceRollEvent.RollFinished, (roll: IRoll) =>
+          rollFinished(roll),
+        );
       } else {
-        (window as any).dddice = new (window as any).ThreeDDice();
-        (window as any).dddice.api = new (window as any).ThreeDDiceAPI(apiKey);
+        (window as any).dddice = new ThreeDDice();
+        (window as any).dddice.api = new ThreeDDiceAPI(apiKey);
         (window as any).dddice.api.connect(room);
-        (window as any).dddice.api.listen('RollCreateEvent', roll => rollCreated(roll.data));
+        (window as any).dddice.api.listen(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
+          rollCreated(roll),
+        );
       }
     } catch (e) {
       console.error(e);
