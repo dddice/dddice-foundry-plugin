@@ -34,7 +34,11 @@
   "media": [
     {
       "type": "icon",
-      "url": "https://cdn.dddice.com/images/press-kit/logo-dark.svg"
+      "url": "https://cdn.dddice.com/images/press-kit/logo-dark.png"
+    },
+    {
+      "type": "video",
+      "url": "https://raw.githubusercontent.com/dddice/dddice-foundry-plugin/master/assets/dddice-foundry-plugin.gif"
     }
   ]
 }
