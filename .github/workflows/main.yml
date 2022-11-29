@@ -51,7 +51,7 @@ jobs:
         uses: orhun/git-cliff-action@v1
         with:
           config: cliff.toml
-          args: -l
+          args: --current --date-order --strip all
         env:
           OUTPUT: CHANGES.md
 
@@ -60,10 +60,9 @@ jobs:
         shell: bash
         run: |
           r=$(cat ${{ steps.git-cliff.outputs.changelog }})
-          r="${r//'%'/'%25'}"     # Multiline escape sequences for %
-          r="${r//$'\n'/'%0A'}"   # Multiline escape sequences for '\n'
-          r="${r//$'\r'/'%0D'}"   # Multiline escape sequences for '\r'
-          echo "::set-output name=RELEASE_BODY::$r"
+          echo "RELEASE_BODY<<EOF" >>$GITHUB_OUTPUT
+          echo "$r" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       # Create a release for this specific version
       - name: Update Release with Files
