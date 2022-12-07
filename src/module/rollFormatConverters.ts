@@ -2,6 +2,7 @@
 
 import { IDiceRoll, IRoll, IRollValue } from 'dddice-js';
 import createLogger from '../module/log';
+
 const log = createLogger('module');
 
 function convertD100toD10x(theme, value) {
@@ -47,11 +48,13 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
     values: number[];
     themes: string[];
   }
+
   const modifiers = dddiceRolls.operator
     ? Object.entries(dddiceRolls.operator).map(([key, value]) => `${key}${value}`)
     : [];
-  const fvttRollTerms = Object.entries(
-    dddiceRolls.values.reduce((prev, current): { [id: string]: DieAggregation } => {
+
+  const dieAggregations: Record<string, DieAggregation> = dddiceRolls.values.reduce(
+    (prev, current): { [id: string]: DieAggregation } => {
       if (prev[current.type]) {
         prev[current.type] = {
           values: [...prev[current.type].values, current],
@@ -66,8 +69,53 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
         };
       }
       return prev;
-    }, {}),
-  ).reduce(
+    },
+    {},
+  );
+
+  log.debug('dieAggregations', dieAggregations);
+
+  if (dieAggregations?.d10x?.count > 0 && dieAggregations?.d10?.count > 0) {
+    dieAggregations.d100 = { values: [], count: 0, themes: [] };
+    const d10 = dieAggregations.d10;
+    const d10x = dieAggregations.d10x;
+    delete dieAggregations.d10;
+    delete dieAggregations.d10x;
+    let i;
+    for (i = 0; i < d10x.count && i < d10.count; ++i) {
+      dieAggregations.d100.values[i] = {
+        value: d10.values[i].value + d10x.values[i].value,
+        value_to_display:
+          parseInt(d10.values[i].value_to_display) + parseInt(d10x.values[i].value_to_display),
+      };
+      dieAggregations.d100.count++;
+      dieAggregations.d100.themes[i] = d10x.themes[i];
+    }
+    log.debug('i', i);
+    if (i < d10.count) {
+      dieAggregations.d10 = { values: [], count: 0, themes: [] };
+    }
+    if (i < d10x.count) {
+      dieAggregations.d10x = { values: [], count: 0, themes: [] };
+    }
+    while (i < d10x.count || i < d10.count) {
+      if (i < d10.count) {
+        dieAggregations.d10.values.push(d10.values[i]);
+        dieAggregations.d10.count++;
+        dieAggregations.d10.themes.push(d10.themes[i]);
+      }
+      if (i < d10x.count) {
+        dieAggregations.d10x.values.push(d10x.values[i]);
+        dieAggregations.d10x.count++;
+        dieAggregations.d10x.themes.push(d10x.themes[i]);
+      }
+      ++i;
+    }
+  }
+
+  log.debug('dieAggregations', dieAggregations);
+
+  const fvttRollTerms = Object.entries(dieAggregations).reduce(
     //@ts-ignore
     (prev: DiceTerm[], [type, { count, values, themes }]: [string, DieAggregation]): DiceTerm[] => {
       if (type === 'mod') {
