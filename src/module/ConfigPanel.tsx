@@ -1,6 +1,11 @@
 /** @format */
 
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
 import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
+
+import App from './App';
 
 export class ConfigPanel extends FormApplication {
   private configOptions: any;
@@ -16,8 +21,15 @@ export class ConfigPanel extends FormApplication {
     this.configOptions = configOptions;
     const apiKey: string = game.settings.get('dddice', 'apiKey') as string;
     if (apiKey) {
-      this.connectToDddice(apiKey);
+      //this.connectToDddice(apiKey);
     }
+    this.render(true, { height: 500 });
+  }
+
+  activateListeners(html: JQuery) {
+    super.activateListeners(html);
+    const root = ReactDOM.createRoot(document.getElementById('dddice'));
+    root.render(<App />);
   }
 
   static get defaultOptions() {

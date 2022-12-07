@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "es2018",
     "module": "esnext",
-    "lib": [ "es2015", "es2019", "dom" ],
-    "types": [ "@league-of-foundry-developers/foundry-vtt-types", "node" ],
+    "lib": ["es2015", "es2019", "dom"],
+    "types": ["@league-of-foundry-developers/foundry-vtt-types", "node"],
     "moduleResolution": "node",
     "sourceMap": true,
     "strict": true,
@@ -24,7 +24,9 @@
     "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
     "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
 
-    "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
+    "forceConsistentCasingInFileNames": true,
+    /* Disallow inconsistently-cased references to the same file. */
+    "jsx": "react"
   },
-  "exclude": [ "node_modules", "webpack.config.js", "foundry.js", "dist" ]
+  "exclude": ["node_modules", "webpack.config.js", "foundry.js", "dist"]
 }

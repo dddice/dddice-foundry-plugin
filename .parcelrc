@@ -1,5 +1,15 @@
 {
-  "extends": ["@parcel/config-default"],
-  "namers": [ "parcel-namer-rewrite" ],
-  "reporters":  ["...", "parcel-reporter-static-files-copy"]
+  "extends": [
+    "@parcel/config-default"
+  ],
+  "reporters": [
+    "...",
+    "parcel-reporter-static-files-copy"
+  ],
+  "transformers": {
+    "*.svg": [
+      "...",
+      "@parcel/transformer-svg-react"
+    ]
+  }
 }

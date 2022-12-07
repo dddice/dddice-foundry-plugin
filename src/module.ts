@@ -15,10 +15,11 @@ require('dddice-js');
 Hooks.once('init', async () => {
   (window as any).dddice = new (window as any).ThreeDDice();
 
+  // register static settings
   game.settings.registerMenu('dddice', 'connect', {
-    name: 'Account',
+    name: 'Account (optional)',
     label: 'Connect to dddice',
-    hint: 'Link to your dddice account with your api key. Generate one at https://dddice.com/account/developer',
+    hint: 'Link your dddice account with your api key. Generate one at https://dddice.com/account/developer',
     icon: 'fa-solid fa-cloud-exclamation',
     type: ConfigPanel,
     restricted: false,
@@ -35,7 +36,7 @@ Hooks.once('init', async () => {
       off: 'off',
     },
     config: true,
-    onChange: () => window.location.reload(),
+    requiresReload: true,
   });
 
   game.settings.register('dddice', 'apiKey', {
@@ -50,11 +51,12 @@ Hooks.once('init', async () => {
   game.settings.register('dddice', 'room', {
     name: 'Room',
     hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
-    scope: 'client',
+    scope: 'world',
     type: String,
     default: '',
-    config: false,
-    onChange: () => window.location.reload(),
+    config: true,
+    requiresReload: true,
+    restricted: true,
   });
 
   game.settings.register('dddice', 'theme', {
@@ -63,7 +65,26 @@ Hooks.once('init', async () => {
     scope: 'client',
     type: String,
     default: '',
-    config: false,
+    config: true,
+  });
+
+  game.settings.register('dddice', 'rooms', {
+    name: 'Room',
+    hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
+    scope: 'world',
+    type: Array,
+    default: [],
+    config: true,
+    restricted: true,
+  });
+
+  game.settings.register('dddice', 'themes', {
+    name: 'Dice Theme',
+    hint: 'Choose a dice theme from your dice box',
+    scope: 'client',
+    type: Array,
+    default: [],
+    config: true,
   });
 
   document.body.addEventListener('click', () => {
@@ -74,6 +95,14 @@ Hooks.once('init', async () => {
 });
 
 Hooks.once('ready', async () => {
+  // if apiKey isn't set, create a guest account
+  log.debug('ready hook');
+  let apiKey;
+  if (!game.settings.get('dddice', 'apiKey')) {
+    apiKey = (await new ThreeDDiceAPI().user.guest()).data;
+    await game.settings.set('dddice', 'apiKey', apiKey);
+  }
+
   if (game.settings.get('dddice', 'render mode') === 'on') {
     // add canvas element to document
     const canvasElement = document.createElement('canvas');
@@ -236,7 +265,7 @@ const notConnectedMessage = () => {
         <h3 class="nue">dddice | 3D Dice Roller</h3>
         <p class="nue">Your game has been configured to use the dddice 3D dice roller. However you are not properly connected to the system.</p>
         <p class="nue">please update your API key and dice room selection in our settings.</p>
-        <button class="dddice-settings-button"><i class="fa-solid fa-cloud-exclamation"></i> dddice settings</button>
+        <span class="dddice-settings-button"><i class="fa-solid fa-cloud-exclamation"></i> dddice settings</span>
       </div>
     `,
     };
