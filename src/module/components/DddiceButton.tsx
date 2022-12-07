@@ -8,7 +8,7 @@ const DddiceButton = props => {
   return (
     <div
       className={classNames(
-        'cursor-pointer relative inline-block transition transform hover:scale-105 lg:mt-12',
+        'cursor-pointer relative inline-block transition transform hover:scale-105',
         size == 'small' ? 'mt-2 m-2' : 'mt-3 m-3',
       )}
       onClick={onClick}

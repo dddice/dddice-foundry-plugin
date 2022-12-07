@@ -34,19 +34,19 @@ const ThemeSelection = (props: IThemes) => {
           <Refresh data-tip="refresh dice box" className="flex h-4 w-4" />
         </span>
       </div>
-      {themes?.length > 0 && (
-        <div className="overflow-y-auto scroll">
-          {themes.map((theme: ITheme) => (
-            <ThemeCard theme={theme} onClick={() => onSelectTheme(theme)} key={theme.id} />
-          ))}
-        </div>
-      )}
-      <div className="text-gray-300">
+      <div className="text-gray-300 m-auto">
         Don't see your dice?{' '}
         <DddiceButton size="small" onClick={onConnectAccount} isSecondary>
           connect your account
         </DddiceButton>
       </div>
+      {themes?.length > 0 && (
+        <div className="overflow-y-auto scroll mt-2">
+          {themes.map((theme: ITheme) => (
+            <ThemeCard theme={theme} onClick={() => onSelectTheme(theme)} key={theme.id} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

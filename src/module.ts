@@ -1,6 +1,14 @@
 /** @format */
 import { ConfigPanel } from './module/ConfigPanel';
-import { IRoll, ThreeDDice, ThreeDDiceAPI, ThreeDDiceRollEvent, IUser } from 'dddice-js';
+import {
+  IRoll,
+  IRoom,
+  ITheme,
+  IUser,
+  ThreeDDice,
+  ThreeDDiceAPI,
+  ThreeDDiceRollEvent,
+} from 'dddice-js';
 import createLogger from './module/log';
 import {
   convertDddiceRollModelToFVTTRollModel,
@@ -17,10 +25,10 @@ Hooks.once('init', async () => {
 
   // register static settings
   game.settings.registerMenu('dddice', 'connect', {
-    name: 'Account (optional)',
-    label: 'Connect to dddice',
-    hint: 'Link your dddice account with your api key. Generate one at https://dddice.com/account/developer',
-    icon: 'fa-solid fa-cloud-exclamation',
+    name: 'Settings',
+    label: 'Configure dddice',
+    hint: 'Configure dddice settings',
+    icon: 'fa-solid fa-dice-d20',
     type: ConfigPanel,
     restricted: false,
   });
@@ -54,9 +62,10 @@ Hooks.once('init', async () => {
     scope: 'world',
     type: String,
     default: '',
-    config: true,
+    config: false,
     requiresReload: true,
     restricted: true,
+    onChange: value => value && setUpDddiceSdk(),
   });
 
   game.settings.register('dddice', 'theme', {
@@ -65,26 +74,26 @@ Hooks.once('init', async () => {
     scope: 'client',
     type: String,
     default: '',
-    config: true,
+    config: false,
   });
 
   game.settings.register('dddice', 'rooms', {
-    name: 'Room',
-    hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
-    scope: 'world',
+    name: 'Rooms',
+    hint: 'Cached Room Data',
+    scope: 'client',
     type: Array,
     default: [],
-    config: true,
+    config: false,
     restricted: true,
   });
 
   game.settings.register('dddice', 'themes', {
-    name: 'Dice Theme',
-    hint: 'Choose a dice theme from your dice box',
+    name: 'Dice Themes',
+    hint: 'Cached Theme Data',
     scope: 'client',
     type: Array,
     default: [],
-    config: true,
+    config: false,
   });
 
   document.body.addEventListener('click', () => {
@@ -97,11 +106,6 @@ Hooks.once('init', async () => {
 Hooks.once('ready', async () => {
   // if apiKey isn't set, create a guest account
   log.debug('ready hook');
-  let apiKey;
-  if (!game.settings.get('dddice', 'apiKey')) {
-    apiKey = (await new ThreeDDiceAPI().user.guest()).data;
-    await game.settings.set('dddice', 'apiKey', apiKey);
-  }
 
   if (game.settings.get('dddice', 'render mode') === 'on') {
     // add canvas element to document
@@ -114,6 +118,7 @@ Hooks.once('ready', async () => {
       'resize',
       () =>
         (window as any).dddice &&
+        (window as any).dddice.renderer &&
         (window as any).dddice.resize(window.innerWidth, window.innerHeight),
     );
   }
@@ -133,10 +138,11 @@ Hooks.once('ready', async () => {
       isEnabled: () => true,
       showForRoll: (...args) => {
         log.debug('steal show for roll', ...args);
-        const theme = game.settings.get('dddice', 'theme');
-        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme);
+        const room = getCurrentRoom();
+        const theme = getCurrentTheme();
+        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme.id);
         (window as any).api.roll.create(dddiceRoll.dice, {
-          room: game.settings.get('dddice', 'room'),
+          room: room.slug,
           operator: dddiceRoll.operator,
         });
       },
@@ -150,10 +156,11 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   // if there is no message id we presume dddice didn't know about this roll
   // and send it to the api
   if (!messageId) {
-    const theme = game.settings.get('dddice', 'theme');
-    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme);
+    const room = getCurrentRoom();
+    const theme = getCurrentTheme();
+    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme.id);
     (window as any).api.roll.create(dddiceRoll.dice, {
-      room: game.settings.get('dddice', 'room'),
+      room: room.slug,
       operator: dddiceRoll.operator,
     });
   }
@@ -182,13 +189,15 @@ Hooks.on('createChatMessage', async chatMessage => {
     }
 
     if (!chatMessage.flags?.dddice?.rollId && !chatMessage?.data.flags?.dddice?.rollId) {
-      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls);
+      const room = getCurrentRoom();
+      const theme = getCurrentTheme();
+      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls, theme.id);
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
         try {
           const dddiceRollResponse: IRoll = (
             await (window as any).api.roll.create(dddiceRoll.dice, {
-              room: game.settings.get('dddice', 'room'),
+              room: room.slug,
               operator: dddiceRoll.operator,
             })
           ).data;
@@ -196,6 +205,7 @@ Hooks.on('createChatMessage', async chatMessage => {
           await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
         } catch (e) {
           console.error(e);
+          ui.notifications?.error(`dddice | ${e}`);
           chatMessage._dddice_hide = false;
         }
       }
@@ -214,14 +224,80 @@ Hooks.on('renderChatMessage', (message, html, data) => {
   }
 });
 
-function setUpDddiceSdk() {
+function getCurrentTheme() {
+  try {
+    return JSON.parse(game.settings.get('dddice', 'theme') as string) as ITheme;
+  } catch {
+    return { id: game.settings.get('dddice', 'theme') as string };
+  }
+}
+
+function getCurrentRoom() {
+  try {
+    return JSON.parse(game.settings.get('dddice', 'room') as string) as IRoom;
+  } catch {
+    return { slug: game.settings.get('dddice', 'room') as string };
+  }
+}
+
+async function createGuestUserIfNeeded() {
+  let didSetup = false;
+  let apiKey = game.settings.get('dddice', 'apiKey') as string;
+  if (!apiKey) {
+    log.info('creating guest account');
+    apiKey = (await new ThreeDDiceAPI().user.guest()).data;
+    await game.settings.set('dddice', 'apiKey', apiKey);
+    didSetup = true;
+  }
+  (window as any).api = new ThreeDDiceAPI(apiKey);
+
+  if (!game.settings.get('dddice', 'room') && game.user?.isGM) {
+    log.info('creating room');
+    const room = (await (window as any).api.room.create()).data;
+    await game.settings.set('dddice', 'room', room);
+  }
+
+  if (!game.settings.get('dddice', 'theme')) {
+    log.info('pick random theme');
+    const themes = (await (window as any).api.diceBox.list()).data.filter(theme =>
+      Object.values(
+        theme.available_dice
+          .map(die => die.type ?? die)
+          .reduce(
+            (prev, curr) => {
+              prev[curr] = true;
+              return prev;
+            },
+            { d4: false, d6: false, d8: false, d10: false, d10x: false, d20: false },
+          ),
+      ).every(type => type),
+    );
+    await game.settings.set('dddice', 'theme', themes[Math.floor(Math.random() * themes.length)]);
+    didSetup = true;
+  }
+
+  const room = getCurrentRoom();
+  if (room.slug) {
+    try {
+      await (window as any).api.room.join(room.slug);
+    } catch (error) {
+      log.warn('eating error', error);
+    }
+  }
+
+  return didSetup;
+}
+
+async function setUpDddiceSdk() {
   log.info('setting up dddice sdk');
+  const shouldSendWelcomeMessage = await createGuestUserIfNeeded();
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
-  const room = game.settings.get('dddice', 'room') as string;
+  const room = getCurrentRoom().slug;
   if (apiKey && room) {
     try {
       (window as any).api = new ThreeDDiceAPI(apiKey);
-      (window as any).api.user.get().then(user => game.user?.setFlag('dddice', 'user', user));
+      const user: IUser = (await (window as any).api.user.get()).data;
+      game.user?.setFlag('dddice', 'user', user);
 
       const canvas: HTMLCanvasElement = document.getElementById(
         'dddice-canvas',
@@ -248,24 +324,61 @@ function setUpDddiceSdk() {
       }
     } catch (e) {
       console.error(e);
+      ui.notifications?.error(e);
       notConnectedMessage();
+      return;
     }
   } else {
     notConnectedMessage();
+    return;
   }
+  if (shouldSendWelcomeMessage) {
+    sendWelcomeMessage();
+  }
+  ui.notifications?.info('dddice is ready to roll!');
 }
 
 const notConnectedMessage = () => {
-  if ($(document).find('.dddice-settings-button').length === 0) {
+  if ($(document).find('.dddice-not-connected').length === 0) {
     const message = {
       whisper: [game.user.id],
       speaker: { alias: 'dddice' },
       content: `
-      <div class="message-content">
+      <div class="message-content dddice-not-connected-message">
         <h3 class="nue">dddice | 3D Dice Roller</h3>
         <p class="nue">Your game has been configured to use the dddice 3D dice roller. However you are not properly connected to the system.</p>
-        <p class="nue">please update your API key and dice room selection in our settings.</p>
-        <span class="dddice-settings-button"><i class="fa-solid fa-cloud-exclamation"></i> dddice settings</span>
+        <p class="nue">please update your configuration in our settings.</p>
+        <button class="dddice-settings-button"><i class="fa-solid fa-dice-d20"></i> dddice settings</span>
+      </div>
+    `,
+    };
+    ChatMessage.implementation.createDocuments([message]);
+  }
+};
+
+const sendWelcomeMessage = () => {
+  const theme: ITheme = getCurrentTheme();
+  if ($(document).find('.dddice-welcome-message').length === 0) {
+    const message = {
+      whisper: [game.user.id],
+      speaker: { alias: 'dddice' },
+      content: `
+      <div class="message-content dddice-welcome-message">
+        <h3 class="nue">dddice | 3D Dice Roller</h3>
+        <p class="nue">Your game has been configured to use the dddice 3D dice roller.</p>
+        <p class="nue">Everything is all set up and ready to roll! you will be rolling these dice:</p>
+        <div
+          class="flex flex-col border bg-no-repeat bg-contain bg-center rounded border-gray-300 border-solid border-2 bg-gray-800 p-2 pl-1 mb-2"
+          style="background-image: url(${theme.preview?.preview}); background-color: ${theme.label?.background_color}"
+        >
+          <div class="flex flex-row">
+            <div class="flex text-white rounded bg-gray-800 bg-opacity-50 px-1 text-lg font-bold">
+              ${theme.name}
+            </div>
+          </div>
+        </div>
+        <p class="nue"> If you want to change your dice you can change them in our settings</p>
+        <button class="dddice-settings-button"><i class="fa-solid fa-dice-d20"></i> dddice settings</span>
       </div>
     `,
     };

@@ -18,7 +18,7 @@ const RoomCard = (props: IRoomCardProps) => {
     <div
       key={room.slug}
       className={classNames(
-        'flex flex-col border bg-no-repeat bg-cover bg-center rounded border-gray-300 border-solid border-2 bg-gray-800 p-2 pl-1 mb-2',
+        'flex flex-col bg-no-repeat bg-cover bg-center rounded border-gray-300 border-solid border-2 bg-gray-800 p-2 pl-1 mb-2',
         disabled ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer',
       )}
       style={{ backgroundImage: `url(${room.bg_file_path}` }}

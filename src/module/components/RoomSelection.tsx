@@ -51,28 +51,12 @@ const RoomSelection = (props: IRooms) => {
    */
   return (
     <div className="text-white flex flex-col">
-      {rooms?.length > 0 ? (
-        <>
-          <div className="mt-3 flex">
-            <div className="flex mr-auto">{''}</div>
-            <div className="flex flex-row text-xl my-auto justify-center">Join A Room</div>
-            <span onClick={onRefreshRooms} className="ml-auto">
-              <Refresh data-tip="reload room list" className="flex h-4 w-4" />
-            </span>
-          </div>
-          <div className="overflow-y-auto">
-            {rooms.map((room: IRoom) => (
-              <RoomCard room={room} onClick={() => onSelectRoom(room)} key={room.slug} />
-            ))}
-          </div>
-        </>
-      ) : (
-        <DddiceButton onClick={onCreateRoom}>Create A Room</DddiceButton>
-      )}
-      <div className="flex flex-row items-center text-gray-300">
-        <div className="flex-grow border-t border-gray-700" />
-        <div className="pt-0 p-1">or</div>
-        <div className="flex-grow border-t border-gray-700" />
+      <div className="mt-3 flex">
+        <div className="flex mr-auto">{''}</div>
+        <div className="flex flex-row text-xl my-auto justify-center">Join A Room</div>
+        <span onClick={onRefreshRooms} className="ml-auto">
+          <Refresh data-tip="reload room list" className="flex h-4 w-4" />
+        </span>
       </div>
       <form onSubmit={onChangeLink}>
         <label className="text-gray-300 m-2 flex flex-row justify-center">
@@ -80,12 +64,26 @@ const RoomSelection = (props: IRooms) => {
           <input name="link" className="bg-gray-800 rounded text-gray-100" />
         </label>
       </form>
-      <div className="text-gray-300">
+      <div className="flex flex-row items-center text-gray-300">
+        <div className="flex-grow border-solid border-0 border-t border-gray-700" />
+        <div className="pt-0 p-1">or</div>
+        <div className="flex-grow border-solid border-0 border-t border-gray-700" />
+      </div>
+      <div className="text-gray-300 m-auto">
         Don't see your rooms?{' '}
         <DddiceButton size="small" onClick={onConnectAccount} isSecondary>
           connect your account
         </DddiceButton>
       </div>
+      {rooms?.length > 0 ? (
+        <div className="overflow-y-auto mt-2">
+          {rooms.map((room: IRoom) => (
+            <RoomCard room={room} onClick={() => onSelectRoom(room)} key={room.slug} />
+          ))}
+        </div>
+      ) : (
+        <DddiceButton onClick={onCreateRoom}>Create A Room</DddiceButton>
+      )}
     </div>
   );
 };

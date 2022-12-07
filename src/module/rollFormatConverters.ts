@@ -97,11 +97,13 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
   return Roll.fromTerms(fvttRollTerms);
 }
 
-export function convertFVTTRollModelToDddiceRollModel(fvttRolls: Roll[]): {
+export function convertFVTTRollModelToDddiceRollModel(
+  fvttRolls: Roll[],
+  theme: string,
+): {
   dice: IDiceRoll[];
   operator: object;
 } {
-  const theme = game.settings.get('dddice', 'theme');
   let operator;
   return {
     dice: fvttRolls

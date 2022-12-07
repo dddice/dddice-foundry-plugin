@@ -7,7 +7,6 @@ import { IRoom } from 'dddice-js';
 import Share from '../assets/interface-essential-share-2.svg';
 
 import RoomCard from './RoomCard';
-import classNames from 'classnames';
 
 interface IRoomProps {
   room: IRoom;

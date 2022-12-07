@@ -19,7 +19,8 @@ import Room from './components/Room';
 import ThemeSelection from './components/ThemeSelection';
 import Theme from './components/Theme';
 
-import { getStorage, setStorage } from './storage';
+import createLogger from './log';
+const log = createLogger('App');
 
 export interface IStorage {
   apiKey?: string;
@@ -37,7 +38,9 @@ export const DefaultStorage: IStorage = {
   rooms: undefined,
 };
 
-const App = () => {
+const App = props => {
+  const { storageProvider } = props;
+
   /**
    * API
    */
@@ -90,11 +93,11 @@ const App = () => {
   useEffect(() => {
     async function initStorage() {
       const [apiKey, room, theme, rooms, themes] = await Promise.all([
-        getStorage('apiKey'),
-        getStorage('room'),
-        getStorage('theme'),
-        getStorage('rooms'),
-        getStorage('themes'),
+        storageProvider.getStorage('apiKey'),
+        storageProvider.getStorage('room'),
+        storageProvider.getStorage('theme'),
+        storageProvider.getStorage('rooms'),
+        storageProvider.getStorage('themes'),
       ]);
 
       setState((storage: IStorage) => ({
@@ -124,7 +127,7 @@ const App = () => {
       themes = [...themes, ..._themes];
       _themes = (await api.current.diceBox.next())?.data;
     }
-    setStorage({
+    storageProvider.setStorage({
       themes,
     });
     setState(state => ({
@@ -138,7 +141,7 @@ const App = () => {
     setLoadingMessage('Loading rooms list');
     pushLoading();
     const rooms = (await api.current.room.list()).data;
-    setStorage({ rooms });
+    storageProvider.setStorage({ rooms });
     setState(state => ({ ...state, rooms }));
     popLoading();
   };
@@ -151,11 +154,11 @@ const App = () => {
         pushLoading();
 
         try {
-          if (!state.rooms) {
+          if (!state.rooms || state.rooms.length === 0) {
             await refreshRooms();
           }
 
-          if (!state.theme) {
+          if (!state.themes || state.themes.length === 0) {
             await refreshThemes();
           }
           popLoading();
@@ -195,7 +198,9 @@ const App = () => {
           throw error;
         }
         if (newRoom) {
-          await setStorage({ rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom] });
+          await storageProvider.setStorage({
+            rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom],
+          });
           setState((storage: IStorage) => ({
             ...storage,
             rooms: storage.rooms ? [...storage.rooms, newRoom] : [newRoom],
@@ -214,8 +219,12 @@ const App = () => {
         ...storage,
         room,
       }));
-      await setStorage({ room });
-      await reloadDiceEngine();
+
+      ReactTooltip.hide();
+      if (room) {
+        await storageProvider.setStorage({ room });
+        await reloadDiceEngine();
+      }
     },
     [state.rooms],
   );
@@ -233,7 +242,9 @@ const App = () => {
       throw error;
     }
     if (newRoom) {
-      await setStorage({ rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom] });
+      await storageProvider.setStorage({
+        rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom],
+      });
       setState((storage: IStorage) => ({
         ...storage,
         rooms: storage.rooms ? [...storage.rooms, newRoom] : [newRoom],
@@ -244,7 +255,7 @@ const App = () => {
       ...storage,
       room: newRoom,
     }));
-    await setStorage({ room: newRoom });
+    await storageProvider.setStorage({ room: newRoom });
     popLoading();
     await reloadDiceEngine();
   }, [state.rooms]);
@@ -254,10 +265,13 @@ const App = () => {
       ...storage,
       theme,
     }));
-    setStorage({ theme });
+
     if (theme) {
+      storageProvider.setStorage({ theme });
       preloadTheme(theme);
     }
+
+    ReactTooltip.hide();
   }, []);
 
   const onKeySuccess = useCallback((apiKey: string) => {
@@ -267,18 +281,20 @@ const App = () => {
       rooms: undefined,
       themes: undefined,
     }));
-    setStorage({ apiKey });
+    storageProvider.setStorage({ apiKey });
     setIsEnterApiKey(false);
     reloadDiceEngine();
   }, []);
 
   const onSignOut = useCallback(() => {
     setState(DefaultStorage);
-    setStorage({ apiKey: undefined });
-    setStorage({ theme: undefined });
-    setStorage({ room: undefined });
-    setStorage({ rooms: undefined });
-    setStorage({ themes: undefined });
+    storageProvider.setStorage({ apiKey: undefined });
+    storageProvider.setStorage({ theme: undefined });
+    if (game.user?.isGM) {
+      storageProvider.setStorage({ room: undefined });
+    }
+    storageProvider.setStorage({ rooms: undefined });
+    storageProvider.setStorage({ themes: undefined });
     setError(undefined);
     clearLoading();
   }, []);
@@ -300,7 +316,7 @@ const App = () => {
           ...storage,
           apiKey,
         }));
-        await setStorage({ apiKey });
+        await storageProvider.setStorage({ apiKey });
       } catch (error) {
         setError('could not create room');
         clearLoading();
@@ -314,9 +330,9 @@ const App = () => {
    */
   return (
     <div className="px-4 pt-2 pb-4 scroll">
+      <ReactTooltip effect="solid" />
       {isConnected && (
         <>
-          <ReactTooltip effect="solid" />
           <div className="flex flex-row items-baseline justify-center">
             {isEnterApiKey ? (
               <span
@@ -361,7 +377,7 @@ const App = () => {
               </div>
             ) : (
               <>
-                {!state.apiKey || !state.room ? (
+                {(!state.apiKey || !state.room) && game.user?.isGM ? (
                   <RoomSelection
                     rooms={state.rooms}
                     onSelectRoom={onChangeRoom}
@@ -381,7 +397,7 @@ const App = () => {
                 ) : (
                   <>
                     <Room
-                      room={state.room}
+                      room={state.room || { name: 'No Room Selected' }}
                       onSwitchRoom={onSwitchRoom}
                       disabled={!game.user?.isGM}
                     />
