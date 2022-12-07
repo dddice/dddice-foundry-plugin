@@ -39,7 +39,7 @@ export const DefaultStorage: IStorage = {
 };
 
 const App = props => {
-  const { storageProvider } = props;
+  const { storageProvider, sdkBridge } = props;
 
   /**
    * API
@@ -180,7 +180,7 @@ const App = props => {
   };
 
   const preloadTheme = async (theme: ITheme) => {
-    return undefined;
+    return sdkBridge.preloadTheme(theme);
   };
 
   const onJoinRoom = useCallback(async (roomSlug: string) => {
@@ -350,7 +350,7 @@ const App = props => {
                 <Help className="flex h-4 w-4 m-auto" data-tip="Help" data-place="right" />
               </a>
             )}
-            <span className="text-gray-700 text-xs ml-auto" onClick={onSignOut}>
+            <span className="text-gray-700 text-xs ml-auto cursor-pointer" onClick={onSignOut}>
               <LogOut className="flex h-4 w-4 m-auto" data-tip="Logout" data-place="left" />
             </span>
           </div>

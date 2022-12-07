@@ -3,19 +3,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
-
 import App from './App';
-import StorageProvider from './storage';
+import StorageProvider from './StorageProvider';
+import SdkBridge from './SdkBridge';
 
 export class ConfigPanel extends FormApplication {
   private configOptions: any;
-  private connectionStatus = '\u00A0'; // use nbsp to reserve screen real estate in popup, jank, i know.
-  private statusColor = '';
-  private rooms: IRoom[] = [];
-  private themes: ITheme[] = [];
-  private loading = false;
-  private connected = false;
 
   constructor(configOptions) {
     super();
@@ -26,7 +19,7 @@ export class ConfigPanel extends FormApplication {
   activateListeners(html: JQuery) {
     super.activateListeners(html);
     const root = ReactDOM.createRoot(document.getElementById('dddice'));
-    root.render(<App storageProvider={new StorageProvider()} />);
+    root.render(<App storageProvider={new StorageProvider()} sdkBridge={new SdkBridge()} />);
   }
 
   static get defaultOptions() {

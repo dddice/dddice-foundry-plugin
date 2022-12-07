@@ -52,12 +52,12 @@ const ApiKeyEntry = (props: ISplash) => {
    */
   return (
     <>
-      <form className="mt-4" onSubmit={onSubmit}>
+      <form className="mt-4 !text-white" onSubmit={onSubmit}>
         <label>
           <input
             autoComplete="off"
             className={classNames(
-              'rounded text-gray-100 bg-gray-800 p-2 text-base w-full',
+              'rounded !text-gray-100 bg-gray-800 p-2 text-base w-full',
               isLoading && 'opacity-75',
             )}
             disabled={isLoading}
@@ -75,7 +75,7 @@ const ApiKeyEntry = (props: ISplash) => {
       <p className="mt-4 text-gray-200 text-xs text-center">
         Enter your{' '}
         <a
-          className="text-neon-blue hover:text-neon-light-blue"
+          className="!text-neon-blue !hover:text-neon-light-blue"
           href="https://dddice.com/account/developer"
           target="_blank"
         >

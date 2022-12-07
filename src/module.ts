@@ -15,6 +15,7 @@ import {
   convertDiceSoNiceRollToDddiceRoll,
   convertFVTTRollModelToDddiceRollModel,
 } from './module/rollFormatConverters';
+import SdkBridge from './module/SdkBridge';
 
 const log = createLogger('module');
 
@@ -242,6 +243,7 @@ function getCurrentRoom() {
 
 async function createGuestUserIfNeeded() {
   let didSetup = false;
+  let quitSetup = false;
   let apiKey = game.settings.get('dddice', 'apiKey') as string;
   if (!apiKey) {
     log.info('creating guest account');
@@ -250,12 +252,6 @@ async function createGuestUserIfNeeded() {
     didSetup = true;
   }
   (window as any).api = new ThreeDDiceAPI(apiKey);
-
-  if (!game.settings.get('dddice', 'room') && game.user?.isGM) {
-    log.info('creating room');
-    const room = (await (window as any).api.room.create()).data;
-    await game.settings.set('dddice', 'room', room);
-  }
 
   if (!game.settings.get('dddice', 'theme')) {
     log.info('pick random theme');
@@ -276,24 +272,31 @@ async function createGuestUserIfNeeded() {
     didSetup = true;
   }
 
-  const room = getCurrentRoom();
-  if (room.slug) {
-    try {
-      await (window as any).api.room.join(room.slug);
-    } catch (error) {
-      log.warn('eating error', error);
+  if (!game.settings.get('dddice', 'room') && game.user?.isGM) {
+    log.info('creating room');
+    const room = (await (window as any).api.room.create()).data;
+    await game.settings.set('dddice', 'room', room);
+    quitSetup = true;
+  } else {
+    const room = getCurrentRoom();
+    if (room.slug) {
+      try {
+        await (window as any).api.room.join(room.slug);
+      } catch (error) {
+        log.warn('eating error', error);
+      }
     }
   }
 
-  return didSetup;
+  return [didSetup, quitSetup];
 }
 
 async function setUpDddiceSdk() {
   log.info('setting up dddice sdk');
-  const shouldSendWelcomeMessage = await createGuestUserIfNeeded();
+  const [shouldSendWelcomeMessage, shouldStopSetup] = await createGuestUserIfNeeded();
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
   const room = getCurrentRoom().slug;
-  if (apiKey && room) {
+  if (apiKey && room && !shouldStopSetup) {
     try {
       (window as any).api = new ThreeDDiceAPI(apiKey);
       const user: IUser = (await (window as any).api.user.get()).data;
@@ -314,6 +317,7 @@ async function setUpDddiceSdk() {
         (window as any).dddice.on(ThreeDDiceRollEvent.RollFinished, (roll: IRoll) =>
           rollFinished(roll),
         );
+        new SdkBridge().preloadTheme(getCurrentTheme());
       } else {
         (window as any).dddice = new ThreeDDice();
         (window as any).dddice.api = new ThreeDDiceAPI(apiKey);
@@ -322,20 +326,18 @@ async function setUpDddiceSdk() {
           rollCreated(roll),
         );
       }
+      ui.notifications?.info('dddice is ready to roll!');
     } catch (e) {
       console.error(e);
       ui.notifications?.error(e);
       notConnectedMessage();
       return;
     }
-  } else {
-    notConnectedMessage();
-    return;
   }
+
   if (shouldSendWelcomeMessage) {
     sendWelcomeMessage();
   }
-  ui.notifications?.info('dddice is ready to roll!');
 }
 
 const notConnectedMessage = () => {
