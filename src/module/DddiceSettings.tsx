@@ -38,7 +38,7 @@ export const DefaultStorage: IStorage = {
   rooms: undefined,
 };
 
-const App = props => {
+const DddiceSettings = props => {
   const { storageProvider, sdkBridge } = props;
 
   /**
@@ -183,8 +183,10 @@ const App = props => {
     return sdkBridge.preloadTheme(theme);
   };
 
-  const onJoinRoom = useCallback(async (roomSlug: string) => {
+  const onJoinRoom = useCallback(async (roomSlug: string, passcode?: string) => {
     if (roomSlug) {
+      setLoadingMessage('Joining room');
+      pushLoading();
       await createGuestAccountIfNeeded();
       const room = state.rooms && state.rooms.find(r => r.slug === roomSlug);
       if (room) {
@@ -192,9 +194,10 @@ const App = props => {
       } else {
         let newRoom;
         try {
-          newRoom = (await api.current.room.join(roomSlug)).data;
+          newRoom = (await api.current.room.join(roomSlug, passcode)).data;
         } catch (error) {
           setError('could not join room');
+          clearLoading();
           throw error;
         }
         if (newRoom) {
@@ -208,6 +211,7 @@ const App = props => {
           await onChangeRoom(newRoom);
         }
       }
+      popLoading();
     }
   }, []);
 
@@ -429,4 +433,4 @@ const App = props => {
   );
 };
 
-export default App;
+export default DddiceSettings;

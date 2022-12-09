@@ -3,7 +3,7 @@
 const defaultTheme = require('tailwindcss/defaultTheme');
 
 const config = {
-  safelist: ['hidden'],
+  safelist: ['hidden', '!hidden'],
   corePlugins: {
     preflight: false,
   },

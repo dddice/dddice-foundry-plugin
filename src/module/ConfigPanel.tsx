@@ -3,23 +3,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-import App from './App';
+import DddiceSettings from './DddiceSettings';
 import StorageProvider from './StorageProvider';
 import SdkBridge from './SdkBridge';
 
 export class ConfigPanel extends FormApplication {
-  private configOptions: any;
-
   constructor(configOptions) {
     super();
-    this.configOptions = configOptions;
     this.render(true, { height: 500 });
   }
 
   activateListeners(html: JQuery) {
     super.activateListeners(html);
     const root = ReactDOM.createRoot(document.getElementById('dddice'));
-    root.render(<App storageProvider={new StorageProvider()} sdkBridge={new SdkBridge()} />);
+    root.render(
+      <DddiceSettings storageProvider={new StorageProvider()} sdkBridge={new SdkBridge()} />,
+    );
   }
 
   static get defaultOptions() {
@@ -31,5 +30,9 @@ export class ConfigPanel extends FormApplication {
       id: 'dddice-config-panel',
       title: 'dddice | configuration',
     });
+  }
+
+  protected _updateObject(event: Event, formData: object | undefined): Promise<unknown> {
+    return Promise.resolve(undefined);
   }
 }

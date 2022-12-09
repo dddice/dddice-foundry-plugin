@@ -229,7 +229,7 @@ function getCurrentTheme() {
   try {
     return JSON.parse(game.settings.get('dddice', 'theme') as string) as ITheme;
   } catch {
-    return { id: game.settings.get('dddice', 'theme') as string };
+    return undefined;
   }
 }
 
@@ -237,7 +237,7 @@ function getCurrentRoom() {
   try {
     return JSON.parse(game.settings.get('dddice', 'room') as string) as IRoom;
   } catch {
-    return { slug: game.settings.get('dddice', 'room') as string };
+    return undefined;
   }
 }
 
@@ -295,7 +295,7 @@ async function setUpDddiceSdk() {
   log.info('setting up dddice sdk');
   const [shouldSendWelcomeMessage, shouldStopSetup] = await createGuestUserIfNeeded();
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
-  const room = getCurrentRoom().slug;
+  const room = getCurrentRoom()?.slug;
   if (apiKey && room && !shouldStopSetup) {
     try {
       (window as any).api = new ThreeDDiceAPI(apiKey);
