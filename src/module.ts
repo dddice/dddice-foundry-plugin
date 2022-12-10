@@ -141,11 +141,13 @@ Hooks.once('ready', async () => {
         log.debug('steal show for roll', ...args);
         const room = getCurrentRoom();
         const theme = getCurrentTheme();
-        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme.id);
-        (window as any).api.roll.create(dddiceRoll.dice, {
-          room: room.slug,
-          operator: dddiceRoll.operator,
-        });
+        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme?.id);
+        if (room && theme && dddiceRoll) {
+          (window as any).api.roll.create(dddiceRoll.dice, {
+            room: room.slug,
+            operator: dddiceRoll.operator,
+          });
+        }
       },
     };
   }
@@ -159,11 +161,13 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   if (!messageId) {
     const room = getCurrentRoom();
     const theme = getCurrentTheme();
-    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme.id);
-    (window as any).api.roll.create(dddiceRoll.dice, {
-      room: room.slug,
-      operator: dddiceRoll.operator,
-    });
+    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme?.id);
+    if (room && theme && dddiceRoll) {
+      (window as any).api.roll.create(dddiceRoll.dice, {
+        room: room.slug,
+        operator: dddiceRoll.operator,
+      });
+    }
   }
 });
 
@@ -192,13 +196,13 @@ Hooks.on('createChatMessage', async chatMessage => {
     if (!chatMessage.flags?.dddice?.rollId && !chatMessage?.data.flags?.dddice?.rollId) {
       const room = getCurrentRoom();
       const theme = getCurrentTheme();
-      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls, theme.id);
+      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls, theme?.id);
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
         try {
           const dddiceRollResponse: IRoll = (
             await (window as any).api.roll.create(dddiceRoll.dice, {
-              room: room.slug,
+              room: room?.slug,
               operator: dddiceRoll.operator,
             })
           ).data;
@@ -253,7 +257,19 @@ async function createGuestUserIfNeeded() {
   }
   (window as any).api = new ThreeDDiceAPI(apiKey);
 
-  if (!game.settings.get('dddice', 'theme')) {
+  const theme = game.settings.get('dddice', 'theme');
+  if (theme) {
+    try {
+      JSON.parse(theme as string) as ITheme;
+    } catch {
+      didSetup = true;
+      await game.settings.set(
+        'dddice',
+        'theme',
+        JSON.stringify((await (window as any).api.theme.get(theme)).data),
+      );
+    }
+  } else {
     log.info('pick random theme');
     const themes = (await (window as any).api.diceBox.list()).data.filter(theme =>
       Object.values(
@@ -268,18 +284,36 @@ async function createGuestUserIfNeeded() {
           ),
       ).every(type => type),
     );
-    await game.settings.set('dddice', 'theme', themes[Math.floor(Math.random() * themes.length)]);
+    await game.settings.set(
+      'dddice',
+      'theme',
+      JSON.stringify(themes[Math.floor(Math.random() * themes.length)]),
+    );
     didSetup = true;
   }
 
   if (!game.settings.get('dddice', 'room') && game.user?.isGM) {
-    log.info('creating room');
-    const room = (await (window as any).api.room.create()).data;
-    await game.settings.set('dddice', 'room', room);
+    const oldRoom = window.localStorage.getItem('dddice.room');
+    if (oldRoom) {
+      log.info('migrating room');
+      const room = (await (window as any).api.room.get(oldRoom)).data;
+      await game.settings.set('dddice', 'room', JSON.stringify(room));
+      window.localStorage.removeItem('dddice.room');
+    } else {
+      log.info('getting room 0');
+      let room = (await (window as any).api.room.list()).data;
+      if (room && room[0]) {
+        await game.settings.set('dddice', 'room', JSON.stringify(room[0]));
+      } else {
+        log.info('creating room');
+        room = (await (window as any).api.room.create()).data;
+        await game.settings.set('dddice', 'room', JSON.stringify(room));
+      }
+    }
     quitSetup = true;
   } else {
     const room = getCurrentRoom();
-    if (room.slug) {
+    if (room?.slug) {
       try {
         await (window as any).api.room.join(room.slug);
       } catch (error) {
