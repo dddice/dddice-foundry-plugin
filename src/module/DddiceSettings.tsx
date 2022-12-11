@@ -20,6 +20,9 @@ import ThemeSelection from './components/ThemeSelection';
 import Theme from './components/Theme';
 
 import createLogger from './log';
+import StorageProvider from './StorageProvider';
+import SdkBridge from './SdkBridge';
+import PermissionProvider from './PermissionProvider';
 const log = createLogger('App');
 
 export interface IStorage {
@@ -38,8 +41,14 @@ export const DefaultStorage: IStorage = {
   rooms: undefined,
 };
 
-const DddiceSettings = props => {
-  const { storageProvider, sdkBridge } = props;
+interface DddiceSettingsProps {
+  storageProvider: StorageProvider;
+  sdkBridge: SdkBridge;
+  permissionProvider: PermissionProvider;
+}
+
+const DddiceSettings = (props: DddiceSettingsProps) => {
+  const { storageProvider, sdkBridge, permissionProvider } = props;
 
   /**
    * API
@@ -86,8 +95,16 @@ const DddiceSettings = props => {
    * Connect to VTT
    */
   useEffect(() => {
-    setVTT('Foundry VTT');
-    setIsConnected(true);
+    async function connect() {
+      const platform = await sdkBridge.detectPlatform();
+
+      if (platform) {
+        setIsConnected(true);
+        setVTT(platform);
+      }
+    }
+
+    connect();
   }, []);
 
   useEffect(() => {
@@ -176,7 +193,7 @@ const DddiceSettings = props => {
   useEffect(() => ReactTooltip.rebuild());
 
   const reloadDiceEngine = async () => {
-    return undefined;
+    await sdkBridge.reloadDiceEngine();
   };
 
   const preloadTheme = async (theme: ITheme) => {
@@ -292,13 +309,13 @@ const DddiceSettings = props => {
 
   const onSignOut = useCallback(() => {
     setState(DefaultStorage);
-    storageProvider.setStorage({ apiKey: undefined });
-    storageProvider.setStorage({ theme: undefined });
-    if (game.user?.isGM) {
-      storageProvider.setStorage({ room: undefined });
+    storageProvider.removeStorage('apiKey');
+    storageProvider.removeStorage('theme');
+    if (permissionProvider.canChangeRoom()) {
+      storageProvider.removeStorage('room');
     }
-    storageProvider.setStorage({ rooms: undefined });
-    storageProvider.setStorage({ themes: undefined });
+    storageProvider.removeStorage('rooms');
+    storageProvider.removeStorage('themes');
     setError(undefined);
     clearLoading();
   }, []);
@@ -381,7 +398,7 @@ const DddiceSettings = props => {
               </div>
             ) : (
               <>
-                {(!state.apiKey || !state.room) && game.user?.isGM ? (
+                {(!state.apiKey || !state.room) && permissionProvider.canChangeRoom() ? (
                   <RoomSelection
                     rooms={state.rooms}
                     onSelectRoom={onChangeRoom}
@@ -403,7 +420,7 @@ const DddiceSettings = props => {
                     <Room
                       room={state.room || { name: 'No Room Selected' }}
                       onSwitchRoom={onSwitchRoom}
-                      disabled={!game.user?.isGM}
+                      disabled={!permissionProvider.canChangeRoom()}
                     />
                     <Theme theme={state.theme} onSwitchTheme={onSwitchTheme} />
                   </>

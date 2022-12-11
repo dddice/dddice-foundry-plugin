@@ -16,6 +16,12 @@ export default class StorageProvider {
         } catch {
           resolve(undefined);
         }
+      } else if (key === 'rooms' || key === 'themes') {
+        if (value.length === 0) {
+          resolve(undefined);
+        } else {
+          resolve(value);
+        }
       } else {
         resolve(value);
       }
@@ -32,5 +38,9 @@ export default class StorageProvider {
         }
       }),
     );
+  }
+
+  async removeStorage(key: string): Promise<any> {
+    return undefined;
   }
 }

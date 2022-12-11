@@ -6,6 +6,7 @@ import ReactDOM from 'react-dom/client';
 import DddiceSettings from './DddiceSettings';
 import StorageProvider from './StorageProvider';
 import SdkBridge from './SdkBridge';
+import PermissionProvider from './PermissionProvider';
 
 export class ConfigPanel extends FormApplication {
   constructor(configOptions) {
@@ -17,7 +18,11 @@ export class ConfigPanel extends FormApplication {
     super.activateListeners(html);
     const root = ReactDOM.createRoot(document.getElementById('dddice'));
     root.render(
-      <DddiceSettings storageProvider={new StorageProvider()} sdkBridge={new SdkBridge()} />,
+      <DddiceSettings
+        storageProvider={new StorageProvider()}
+        sdkBridge={new SdkBridge()}
+        permissionProvider={new PermissionProvider()}
+      />,
     );
   }
 

@@ -225,7 +225,7 @@ Hooks.on('updateChatMessage', (message, updateData, options) => {
 // add css to hide roll messages about to be deleted to prevent flicker
 Hooks.on('renderChatMessage', (message, html, data) => {
   if (message._dddice_hide) {
-    html.addClass('hidden');
+    html.addClass('!hidden');
   }
 });
 
@@ -248,12 +248,14 @@ function getCurrentRoom() {
 async function createGuestUserIfNeeded() {
   let didSetup = false;
   let quitSetup = false;
+  let justCreatedAnAccount = false;
   let apiKey = game.settings.get('dddice', 'apiKey') as string;
   if (!apiKey) {
     log.info('creating guest account');
     apiKey = (await new ThreeDDiceAPI().user.guest()).data;
     await game.settings.set('dddice', 'apiKey', apiKey);
     didSetup = true;
+    justCreatedAnAccount = true;
   }
   (window as any).api = new ThreeDDiceAPI(apiKey);
 
@@ -292,7 +294,7 @@ async function createGuestUserIfNeeded() {
     didSetup = true;
   }
 
-  if (!game.settings.get('dddice', 'room') && game.user?.isGM) {
+  if ((!game.settings.get('dddice', 'room') || justCreatedAnAccount) && game.user?.isGM) {
     const oldRoom = window.localStorage.getItem('dddice.room');
     if (oldRoom) {
       log.info('migrating room');
@@ -473,7 +475,7 @@ const rollFinished = async (roll: IRoll) => {
   );
   if (chatMessages && chatMessages.length > 0) {
     chatMessages?.forEach(chatMessage => {
-      $(`[data-message-id=${chatMessage.id}]`).removeClass('hidden');
+      $(`[data-message-id=${chatMessage.id}]`).removeClass('!hidden');
       chatMessage._dddice_hide = false;
     });
     window.ui.chat.scrollBottom({ popout: true });
