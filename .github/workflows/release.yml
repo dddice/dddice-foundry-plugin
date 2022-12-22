@@ -1,35 +1,67 @@
 # @format
 
-name: Release Creation
+name: Release
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag'
+        required: true
+        type: string
+      force:
+        description: 'Force Release'
+        default: false
+        type: boolean
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # fetch all history for git cliff
-
       - name: Setup Volta
         uses: volta-cli/action@v4
 
-      - name: Install Dependancies
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all history for git-cliff
+
+      - name: Update Version
+        run: |
+          npm --no-git-tag-version --allow-same-version version $VERSION
+          MANIFEST=$(cat src/manifest.json | jq ".version |= \"${VERSION/v/}\"")
+          echo "$MANIFEST" > src/manifest.json
+
+      - name: Commit
+        run: |
+          git add .
+          git config user.email "developers@dddice.com"
+          git config user.name "dddice"
+          git commit --allow-empty -m "release: ${{ github.event.inputs.tag }}-${{ github.run_number }}" || echo 'ok'
+          git push
+
+      - name: Tag
+        if: inputs.force == false
+        run: |
+          git tag ${{ github.event.inputs.tag }}
+          git push origin ${{ github.event.inputs.tag }}
+
+      - name: Tag (Force)
+        if: inputs.force
+        run: |
+          git tag -f ${{ github.event.inputs.tag }}
+          git push -f origin ${{ github.event.inputs.tag }}
+
+      - name: Build Release
         run: |
           npm ci
-
-      - name: Build
-        run: |
           npm run build
 
       - name: Set Env
         id: version
         run: |
-          TAG=${{ github.event.release.tag_name }}
-          echo "::set-output name=VERSION::${TAG#v}"
+          TAG=${{ github.event.inputs.tag }}
+          echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
 
       # Substitute the Manifest and Download URLs in the module.json
       - name: Substitute Manifest and Download Links For Versioned Ones
@@ -41,7 +73,7 @@ jobs:
           version: ${{ steps.version.outputs.VERSION }}
           url: https://github.com/${{github.repository}}
           manifest: https://github.com/${{github.repository}}/releases/latest/download/module.json
-          download: https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.zip
+          download: https://github.com/${{github.repository}}/releases/download/${{github.event.inputs.tag}}/module.zip
 
       # Create a zip file with all files required by the module to add to the release
       - run: cd dist && zip -r ../module.zip .
@@ -64,26 +96,25 @@ jobs:
           echo "$r" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Create a release for this specific version
-      - name: Update Release with Files
+      - name: Create Release with Files
         id: create_version_release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true # Set this to false if you want to prevent updating existing releases
-          name: ${{ github.event.release.name }}
+          name: ${{ github.event.inputs.tag }}
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './dist/module.json, ./module.zip'
-          tag: ${{ github.event.release.tag_name }}
+          tag: ${{ github.event.inputs.tag }}
           body: ${{ steps.release.outputs.RELEASE_BODY }}
 
       - name: Publish to Foundry Admin
         run: npx @ghost-fvtt/foundry-publish
         env:
           FVTT_MANIFEST_PATH: ./dist/module.json
-          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{github.event.release.tag_name}}/module.json
-          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{github.event.release.tag_name}}
+          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{github.event.inputs.tag}}/module.json
+          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{github.event.inputs.tag}}
           FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
           FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
           FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
