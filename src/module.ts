@@ -134,7 +134,9 @@ Hooks.once('ready', async () => {
 
   // pretend to be dice so nice, if it isn't set up so that we can capture roll
   // animation requests that are sent directly to it by "better 5e rolls"
+  log.info('check for dice so nice', game.dice3d);
   if (!game.dice3d) {
+    log.debug('DSN not there');
     game.dice3d = {
       isEnabled: () => true,
       showForRoll: (...args) => {
@@ -166,6 +168,7 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
       (window as any).api.roll.create(dddiceRoll.dice, {
         room: room.slug,
         operator: dddiceRoll.operator,
+        external_id: 'dsnFreeRoll',
       });
     }
   }
@@ -429,7 +432,7 @@ const rollCreated = async (roll: IRoll) => {
     chatMessage => chatMessage.getFlag('dddice', 'rollId') === roll.uuid,
   );
   // if chat message doesn't exist, (for example a roll outside foundry) then add it in
-  if (!chatMessages || chatMessages.length == 0) {
+  if ((!chatMessages || chatMessages.length == 0) && roll.external_id !== 'dsnFreeRoll') {
     let shouldIMakeTheChat = false;
 
     // If I made the roll outside of foundry
