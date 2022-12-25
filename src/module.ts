@@ -18,8 +18,28 @@ import {
 import SdkBridge from './module/SdkBridge';
 
 const log = createLogger('module');
+const pendingRollsFromShowForRoll = new Map<string, () => void>();
 
 require('dddice-js');
+
+const showForRoll = (...args) => {
+  const room = getCurrentRoom();
+  const theme = getCurrentTheme();
+  const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme?.id);
+  const uuid = 'dsnFreeRoll:' + self.crypto.randomUUID();
+  if (room && theme && dddiceRoll) {
+    (window as any).api.roll.create(dddiceRoll.dice, {
+      room: room.slug,
+      operator: dddiceRoll.operator,
+      external_id: uuid,
+    });
+  }
+  return new Promise<void>(resolve => {
+    pendingRollsFromShowForRoll.set(uuid, resolve);
+    //fall back resolver
+    setTimeout(() => resolve(), 3000);
+  });
+};
 
 Hooks.once('init', async () => {
   (window as any).dddice = new (window as any).ThreeDDice();
@@ -85,7 +105,6 @@ Hooks.once('init', async () => {
     type: Array,
     default: [],
     config: false,
-    restricted: true,
   });
 
   game.settings.register('dddice', 'themes', {
@@ -137,19 +156,13 @@ Hooks.once('ready', async () => {
   log.info('check for dice so nice', game.dice3d);
   if (!game.dice3d) {
     log.debug('DSN not there');
+    // pretend to be dsn;
+    game.modules.set('dice-so-nice', game.modules.get('dddice'));
     game.dice3d = {
       isEnabled: () => true,
       showForRoll: (...args) => {
         log.debug('steal show for roll', ...args);
-        const room = getCurrentRoom();
-        const theme = getCurrentTheme();
-        const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme?.id);
-        if (room && theme && dddiceRoll) {
-          (window as any).api.roll.create(dddiceRoll.dice, {
-            room: room.slug,
-            operator: dddiceRoll.operator,
-          });
-        }
+        return showForRoll(...args);
       },
     };
   }
@@ -161,16 +174,7 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   // if there is no message id we presume dddice didn't know about this roll
   // and send it to the api
   if (!messageId) {
-    const room = getCurrentRoom();
-    const theme = getCurrentTheme();
-    const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(rollData.roll, theme?.id);
-    if (room && theme && dddiceRoll) {
-      (window as any).api.roll.create(dddiceRoll.dice, {
-        room: room.slug,
-        operator: dddiceRoll.operator,
-        external_id: 'dsnFreeRoll',
-      });
-    }
+    showForRoll(rollData);
   }
 });
 
@@ -432,7 +436,10 @@ const rollCreated = async (roll: IRoll) => {
     chatMessage => chatMessage.getFlag('dddice', 'rollId') === roll.uuid,
   );
   // if chat message doesn't exist, (for example a roll outside foundry) then add it in
-  if ((!chatMessages || chatMessages.length == 0) && roll.external_id !== 'dsnFreeRoll') {
+  if (
+    (!chatMessages || chatMessages.length == 0) &&
+    !roll.external_id?.startsWith('dsnFreeRoll:')
+  ) {
     let shouldIMakeTheChat = false;
 
     // If I made the roll outside of foundry
@@ -482,5 +489,13 @@ const rollFinished = async (roll: IRoll) => {
       chatMessage._dddice_hide = false;
     });
     window.ui.chat.scrollBottom({ popout: true });
+  }
+
+  if (roll.external_id) {
+    if (pendingRollsFromShowForRoll.has(roll.external_id)) {
+      const resolver = pendingRollsFromShowForRoll.get(roll.external_id);
+      if (resolver) resolver();
+      pendingRollsFromShowForRoll.delete(roll.external_id);
+    }
   }
 };
