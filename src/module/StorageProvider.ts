@@ -22,6 +22,8 @@ export default class StorageProvider {
         } else {
           resolve(value);
         }
+      } else if (key === 'render mode') {
+        resolve(value === 'on');
       } else {
         resolve(value);
       }
@@ -33,6 +35,9 @@ export default class StorageProvider {
       Object.entries(payload).map(([key, value]) => {
         if (key === 'theme' || key === 'room') {
           game.settings.set('dddice', key, JSON.stringify(value));
+        }
+        if (key === 'render mode') {
+          game.settings.set('dddice', 'render mode', value ? 'on' : 'off');
         } else {
           game.settings.set('dddice', key, value);
         }

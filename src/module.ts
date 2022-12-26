@@ -37,7 +37,7 @@ const showForRoll = (...args) => {
   return new Promise<void>(resolve => {
     pendingRollsFromShowForRoll.set(uuid, resolve);
     //fall back resolver
-    setTimeout(() => resolve(), 3000);
+    setTimeout(() => resolve(), 1500);
   });
 };
 
@@ -64,8 +64,11 @@ Hooks.once('init', async () => {
       on: 'on',
       off: 'off',
     },
-    config: true,
-    requiresReload: true,
+    config: false,
+    onChange: value => {
+      log.debug('change render mode', value);
+      setUpDddiceSdk();
+    },
   });
 
   game.settings.register('dddice', 'apiKey', {
@@ -84,7 +87,6 @@ Hooks.once('init', async () => {
     type: String,
     default: '',
     config: false,
-    requiresReload: true,
     restricted: true,
     onChange: value => value && setUpDddiceSdk(),
   });
@@ -126,22 +128,6 @@ Hooks.once('init', async () => {
 Hooks.once('ready', async () => {
   // if apiKey isn't set, create a guest account
   log.debug('ready hook');
-
-  if (game.settings.get('dddice', 'render mode') === 'on') {
-    // add canvas element to document
-    const canvasElement = document.createElement('canvas');
-    canvasElement.id = 'dddice-canvas';
-    canvasElement.className = 'fixed top-0 h-screen w-screen opacity-100 pointer-events-none';
-    canvasElement.setAttribute('style', 'z-index:1000');
-    document.body.appendChild(canvasElement);
-    window.addEventListener(
-      'resize',
-      () =>
-        (window as any).dddice &&
-        (window as any).dddice.renderer &&
-        (window as any).dddice.resize(window.innerWidth, window.innerHeight),
-    );
-  }
 
   await setUpDddiceSdk();
   $(document).on('click', '.dddice-settings-button', event => {
@@ -345,11 +331,34 @@ async function setUpDddiceSdk() {
       const user: IUser = (await (window as any).api.user.get()).data;
       game.user?.setFlag('dddice', 'user', user);
 
-      const canvas: HTMLCanvasElement = document.getElementById(
-        'dddice-canvas',
-      ) as HTMLCanvasElement;
+      let canvas: HTMLCanvasElement = document.getElementById('dddice-canvas') as HTMLCanvasElement;
 
-      if (game.settings.get('dddice', 'render mode') === 'on' && canvas) {
+      if ((window as any).dddice) {
+        // clear the board
+        if (canvas) canvas.remove();
+        // disconnect from echo
+        if ((window as any).dddice.api?.connection)
+          (window as any).dddice.api.connection.disconnect();
+        // stop the animation loop
+        (window as any).dddice.stop();
+      }
+
+      if (game.settings.get('dddice', 'render mode') === 'on') {
+        if (!canvas) {
+          // add canvas element to document
+          canvas = document.createElement('canvas');
+          canvas.id = 'dddice-canvas';
+          canvas.className = 'fixed top-0 h-screen w-screen opacity-100 pointer-events-none';
+          canvas.setAttribute('style', 'z-index:1000');
+          document.body.appendChild(canvas);
+          window.addEventListener(
+            'resize',
+            () =>
+              (window as any).dddice &&
+              (window as any).dddice.renderer &&
+              (window as any).dddice.resize(window.innerWidth, window.innerHeight),
+          );
+        }
         (window as any).dddice = new ThreeDDice(canvas, apiKey);
         (window as any).dddice.start();
         (window as any).dddice.connect(room);

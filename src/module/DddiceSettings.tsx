@@ -1,7 +1,5 @@
 /** @format */
 
-import '../module.css';
-
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import ReactTooltip from 'react-tooltip';
 import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
@@ -23,6 +21,8 @@ import createLogger from './log';
 import StorageProvider from './StorageProvider';
 import SdkBridge from './SdkBridge';
 import PermissionProvider from './PermissionProvider';
+import Toggle from './components/Toggle';
+
 const log = createLogger('App');
 
 export interface IStorage {
@@ -31,6 +31,7 @@ export interface IStorage {
   theme?: ITheme;
   themes?: ITheme[];
   rooms?: IRoom[];
+  renderMode: boolean;
 }
 
 export const DefaultStorage: IStorage = {
@@ -39,6 +40,7 @@ export const DefaultStorage: IStorage = {
   theme: undefined,
   themes: undefined,
   rooms: undefined,
+  renderMode: true,
 };
 
 interface DddiceSettingsProps {
@@ -109,12 +111,13 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
 
   useEffect(() => {
     async function initStorage() {
-      const [apiKey, room, theme, rooms, themes] = await Promise.all([
+      const [apiKey, room, theme, rooms, themes, renderMode] = await Promise.all([
         storageProvider.getStorage('apiKey'),
         storageProvider.getStorage('room'),
         storageProvider.getStorage('theme'),
         storageProvider.getStorage('rooms'),
         storageProvider.getStorage('themes'),
+        storageProvider.getStorage('render mode'),
       ]);
 
       setState((storage: IStorage) => ({
@@ -124,6 +127,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
         theme,
         rooms,
         themes,
+        renderMode: renderMode === undefined ? true : renderMode,
       }));
     }
 
@@ -144,9 +148,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
       themes = [...themes, ..._themes];
       _themes = (await api.current.diceBox.next())?.data;
     }
-    storageProvider.setStorage({
-      themes,
-    });
+    storageProvider.setStorage({ themes });
     setState(state => ({
       ...state,
       themes,
@@ -350,14 +352,14 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
    * Render
    */
   return (
-    <div className="px-4 pt-2 pb-4 scroll">
+    <div className="px-4 pt-2 pb-4 scroll !font-sans !text-sm">
       <ReactTooltip effect="solid" />
       {isConnected && (
         <>
           <div className="flex flex-row items-baseline justify-center">
             {isEnterApiKey ? (
               <span
-                className="text-gray-700 text-xs mr-auto"
+                className="text-gray-700 text-xs mr-auto cursor-pointer"
                 onClick={() => setIsEnterApiKey(false)}
               >
                 <Back className="flex h-4 w-4 m-auto" data-tip="Back" data-place="right" />
@@ -423,6 +425,19 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
                       disabled={!permissionProvider.canChangeRoom()}
                     />
                     <Theme theme={state.theme} onSwitchTheme={onSwitchTheme} />
+                    <div className="py-3 flex items-center justify-between">
+                      <span className="text-lg font-bold text-gray-300 flex-1">Render Dice</span>
+                      <div>
+                        <Toggle
+                          value={state.renderMode}
+                          onChange={async value => {
+                            setState(state => ({ ...state, renderMode: !value }));
+                            await storageProvider.setStorage({ 'render mode': value });
+                            sdkBridge.reloadDiceEngine();
+                          }}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
               </>

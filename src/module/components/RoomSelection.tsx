@@ -4,10 +4,11 @@
  * @format
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { IRoom } from 'dddice-js';
 
 import Refresh from '../assets/arrows-diagrams-arrow-rotate-1.svg';
+import Check from '../assets/interface-essential-checkmark-sqaure-copy.svg';
 
 import DddiceButton from './DddiceButton';
 import RoomCard from './RoomCard';
@@ -33,10 +34,12 @@ const RoomSelection = (props: IRooms) => {
     onRefreshRooms,
   } = props;
 
+  const formRef = useRef();
+
   const onChangeLink = event => {
     event.preventDefault();
 
-    const formData = new FormData(event.target);
+    const formData = new FormData(formRef.current);
     const link = formData.get('link') as string;
     const passcode = new URLSearchParams(link.split('?')[1]).get('passcode');
     const match = link.match(/\/room\/([a-zA-Z0-9]{7,14})/);
@@ -59,10 +62,13 @@ const RoomSelection = (props: IRooms) => {
           <Refresh data-tip="reload room list" className="flex h-4 w-4" />
         </span>
       </div>
-      <form onSubmit={onChangeLink}>
+      <form ref={formRef} onSubmit={onChangeLink}>
         <label className="text-gray-300 m-2 flex flex-row justify-center">
-          <div className="mr-2">Join Via Link</div>
-          <input name="link" className="bg-gray-800 rounded text-gray-100" />
+          <div className="mr-2 m-auto">Join Via Link</div>
+          <input name="link" className="!bg-gray-800 rounded !text-gray-100 border-0" />
+          <div onClick={onChangeLink} className="!text-gray-300 cursor-pointer m-auto">
+            <Check className="ml-1 flex h-4 w-4 m-auto" data-tip="Join" data-place="right" />
+          </div>
         </label>
       </form>
       <div className="flex flex-row items-center text-gray-300">

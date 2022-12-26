@@ -37,7 +37,7 @@ const Room = (props: IRoomProps) => {
                 setIsCopied(true);
                 setTimeout(() => setIsCopied(false), 2000);
               }}
-              className="ml-auto"
+              className="ml-auto cursor-pointer"
             >
               <Share data-tip="copy share link" className="flex h-4 w-4" />
             </span>
