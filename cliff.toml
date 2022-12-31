@@ -28,9 +28,9 @@ trim = false
 footer = """
 Install from the module library or at 👇
 
-Foundry VTT: https://foundryvtt.com/packages/dddice
-Foundry Hub: https://www.foundryvtt-hub.com/package/dddice/
-The Forge: https://forge-vtt.com/bazaar/package/dddice
+* Foundry VTT: https://foundryvtt.com/packages/dddice
+* Foundry Hub: https://www.foundryvtt-hub.com/package/dddice/
+* The Forge: https://forge-vtt.com/bazaar/package/dddice
 """
 
 [git]
