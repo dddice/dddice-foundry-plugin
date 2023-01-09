@@ -83,7 +83,7 @@ jobs:
         uses: orhun/git-cliff-action@v2
         with:
           config: cliff.toml
-          args: --current --date-order --strip all
+          args: --current --strip all
         env:
           OUTPUT: CHANGES.md
 
