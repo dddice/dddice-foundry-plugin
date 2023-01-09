@@ -25,7 +25,7 @@ require('dddice-js');
 const showForRoll = (...args) => {
   const room = getCurrentRoom();
   const theme = getCurrentTheme();
-  const dddiceRoll = convertDiceSoNiceRollToDddiceRoll(args[0], theme?.id);
+  const dddiceRoll = convertFVTTRollModelToDddiceRollModel([args[0]], theme?.id as string);
   const uuid = 'dsnFreeRoll:' + self.crypto.randomUUID();
   if (room && theme && dddiceRoll) {
     (window as any).api.roll.create(dddiceRoll.dice, {
