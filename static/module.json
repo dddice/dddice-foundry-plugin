@@ -5,12 +5,9 @@
   "description": "Roll 3D digital dice using Foundry VTT.",
   "version": "This is auto replaced",
   "library": "false",
-  "manifestPlusVersion": "1.0.0",
-  "minimumCoreVersion": "9.280",
-  "compatibleCoreVersion": "10.288",
   "compatibility": {
     "verified": "10.291",
-    "minimum": "9.280"
+    "minimum": "10.282"
   },
   "authors": [
     {

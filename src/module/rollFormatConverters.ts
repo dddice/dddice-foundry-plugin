@@ -187,6 +187,9 @@ export function convertFVTTRollModelToDddiceRollModel(
                 }, {});
                 if (term.faces === 100) {
                   return convertD100toD10x(theme, result.result);
+                }
+                if (term.faces === 0) {
+                  return null;
                 } else {
                   return { type: `d${term.faces}`, value: result.result, theme };
                 }

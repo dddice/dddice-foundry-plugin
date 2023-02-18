@@ -143,7 +143,6 @@ Hooks.once('ready', async () => {
   if (!game.dice3d) {
     log.debug('DSN not there');
     // pretend to be dsn;
-    game.modules.set('dice-so-nice', game.modules.get('dddice'));
     game.dice3d = {
       isEnabled: () => true,
       showForRoll: (...args) => {
@@ -166,21 +165,10 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
 
 Hooks.on('createChatMessage', async chatMessage => {
   log.debug('calling Create Chat Message hook', chatMessage);
-  // massage v9 and v10
-  const rolls =
-    chatMessage?.rolls?.length > 0
-      ? chatMessage.rolls
-      : chatMessage.roll?.terms.length > 0
-      ? [chatMessage.roll]
-      : null;
+  const rolls = chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
   if (rolls?.length > 0) {
     // remove the sound v10
     mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
-
-    // remove the sound v9
-    if (chatMessage.data) {
-      mergeObject(chatMessage.data, { '-=sound': null });
-    }
 
     if (game.settings.get('dddice', 'render mode') === 'on') {
       chatMessage._dddice_hide = true;
