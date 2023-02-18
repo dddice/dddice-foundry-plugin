@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   v10:
-    image: felddy/foundryvtt:release
+    image: felddy/foundryvtt:release-10.291.0
     hostname: my_foundry_host
     init: true
     volumes:
