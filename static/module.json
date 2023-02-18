@@ -9,7 +9,7 @@
   "minimumCoreVersion": "9.280",
   "compatibleCoreVersion": "10.288",
   "compatibility": {
-    "verified": "10.288",
+    "verified": "10.291",
     "minimum": "9.280"
   },
   "authors": [
