@@ -11,7 +11,7 @@ import PermissionProvider from './PermissionProvider';
 export class ConfigPanel extends FormApplication {
   constructor(configOptions) {
     super();
-    this.render(true, { height: 500 });
+    this.render(true, { height: 500, width: 335 });
   }
 
   activateListeners(html: JQuery) {

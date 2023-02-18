@@ -21,13 +21,7 @@
   "esmodules": ["module.js"],
   "scripts": [],
   "styles": ["module.css"],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "languages/en.json"
-    }
-  ],
+  "languages": [],
   "url": "This is auto replaced",
   "manifest": "https://github.com/dddice/dddice-foundry-plugin/releases/latest/dowload/module.json",
   "download": "This is auto replaced",
