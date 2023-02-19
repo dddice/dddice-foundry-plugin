@@ -174,7 +174,7 @@ Hooks.on('createChatMessage', async chatMessage => {
       chatMessage._dddice_hide = true;
     }
 
-    if (!chatMessage.flags?.dddice?.rollId && !chatMessage?.data.flags?.dddice?.rollId) {
+    if (!chatMessage.flags?.dddice?.rollId) {
       const room = getCurrentRoom();
       const theme = getCurrentTheme();
       const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls, theme?.id);

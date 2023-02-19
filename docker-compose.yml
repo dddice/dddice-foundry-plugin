@@ -17,8 +17,8 @@ services:
         published: 30000
         protocol: tcp
 
-  v9:
-    image: felddy/foundryvtt:9.280
+  v11:
+    image: felddy/foundryvtt:release-11.292.0
     hostname: my_foundry_host
     init: true
     volumes:
