@@ -185,6 +185,7 @@ Hooks.on('createChatMessage', async chatMessage => {
             await (window as any).api.roll.create(dddiceRoll.dice, {
               room: room?.slug,
               operator: dddiceRoll.operator,
+              external_id: 'foundryVTT:' + chatMessage.uuid,
             })
           ).data;
 
@@ -435,7 +436,8 @@ const rollCreated = async (roll: IRoll) => {
   // if chat message doesn't exist, (for example a roll outside foundry) then add it in
   if (
     (!chatMessages || chatMessages.length == 0) &&
-    !roll.external_id?.startsWith('dsnFreeRoll:')
+    !roll.external_id?.startsWith('dsnFreeRoll:') &&
+    !roll.external_id?.startsWith('foundryVTT:')
   ) {
     let shouldIMakeTheChat = false;
 
