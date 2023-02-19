@@ -367,7 +367,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
             ) : (
               <a
                 className="!text-gray-700 text-xs mr-auto"
-                href="https://docs.dddice.com/guides/browser-extension.html"
+                href="https://docs.dddice.com/guides/foundry-vtt-module.html"
                 target="_blank"
               >
                 <Help className="flex h-4 w-4 m-auto" data-tip="Help" data-place="right" />
