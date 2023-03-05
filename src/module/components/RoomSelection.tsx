@@ -42,7 +42,7 @@ const RoomSelection = (props: IRooms) => {
     const formData = new FormData(formRef.current);
     const link = formData.get('link') as string;
     const passcode = new URLSearchParams(link.split('?')[1]).get('passcode');
-    const match = link.match(/\/room\/([a-zA-Z0-9]{7,14})/);
+    const match = link.match(/\/room\/([a-zA-Z0-9_-]{7,14})/);
     if (match) {
       onJoinRoom(match[1], passcode);
     } else {
