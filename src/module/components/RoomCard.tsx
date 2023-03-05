@@ -30,8 +30,21 @@ const RoomCard = (props: IRoomCardProps) => {
         </div>
       </div>
       <div className="ml-6 mt-1 flex flex-row-reverse flex-wrap">
+        {room.participants.length >= 4 && (
+          <span
+            className={classNames(
+              'relative transform hover:scale-105 transition-all duration-200 mr-1 mb-1',
+              disabled && 'pointer-events-none',
+            )}
+            data-tip={`${room.participants.length - 4} more`}
+          >
+            <span className="text-white relative z-10 hover:z-20 rounded-full border-2 border-solid flex items-center justify-center font-bold bg-gray-800 cursor-pointer w-8 h-8 lg:w-10 lg:h-10 text-xs lg:text-md">
+              {'+'}
+            </span>
+          </span>
+        )}
         {room.participants &&
-          room.participants.map(participant => (
+          room.participants.slice(0, 4).map(participant => (
             <span
               className={classNames(
                 'relative transform hover:scale-105 transition-all duration-200 mr-1 mb-1',
@@ -43,7 +56,6 @@ const RoomCard = (props: IRoomCardProps) => {
               <span
                 data-tip={participant.username}
                 className="text-white relative z-10 hover:z-20 rounded-full border-2 border-solid flex items-center justify-center font-bold bg-gray-800 cursor-pointer w-8 h-8 lg:w-10 lg:h-10 text-xs lg:text-md"
-                currentitem="false"
                 style={{
                   borderColor: participant.color,
                 }}
