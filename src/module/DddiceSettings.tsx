@@ -167,7 +167,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
 
   useEffect(() => {
     if (state.apiKey) {
-      api.current = new ThreeDDiceAPI(state.apiKey);
+      api.current = new ThreeDDiceAPI(state.apiKe, 'Foundry VTT');
 
       const load = async () => {
         pushLoading();
@@ -333,8 +333,8 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
   const createGuestAccountIfNeeded = useCallback(async () => {
     if (!state.apiKey || !api.current) {
       try {
-        const apiKey = (await new ThreeDDiceAPI().user.guest()).data;
-        api.current = new ThreeDDiceAPI(apiKey);
+        const apiKey = (await new ThreeDDiceAPI().user.guest(), 'Foundry VTT').data;
+        api.current = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
         setState((storage: IStorage) => ({
           ...storage,
           apiKey,

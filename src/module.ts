@@ -234,12 +234,12 @@ async function createGuestUserIfNeeded() {
   let apiKey = game.settings.get('dddice', 'apiKey') as string;
   if (!apiKey) {
     log.info('creating guest account');
-    apiKey = (await new ThreeDDiceAPI().user.guest()).data;
+    apiKey = (await new ThreeDDiceAPI(undefined, 'Foundry VTT').user.guest()).data;
     await game.settings.set('dddice', 'apiKey', apiKey);
     didSetup = true;
     justCreatedAnAccount = true;
   }
-  (window as any).api = new ThreeDDiceAPI(apiKey);
+  (window as any).api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
 
   const theme = game.settings.get('dddice', 'theme');
   if (theme) {
@@ -316,7 +316,7 @@ async function setUpDddiceSdk() {
   const room = getCurrentRoom()?.slug;
   if (apiKey && room && !shouldStopSetup) {
     try {
-      (window as any).api = new ThreeDDiceAPI(apiKey);
+      (window as any).api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
       const user: IUser = (await (window as any).api.user.get()).data;
       game.user?.setFlag('dddice', 'user', user);
 
@@ -348,7 +348,7 @@ async function setUpDddiceSdk() {
               (window as any).dddice.resize(window.innerWidth, window.innerHeight),
           );
         }
-        (window as any).dddice = new ThreeDDice(canvas, apiKey);
+        (window as any).dddice = new ThreeDDice(canvas, apiKey, 'Foundry VTT');
         (window as any).dddice.start();
         (window as any).dddice.connect(room);
         (window as any).dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
@@ -361,7 +361,7 @@ async function setUpDddiceSdk() {
         new SdkBridge().preloadTheme(getCurrentTheme());
       } else {
         (window as any).dddice = new ThreeDDice();
-        (window as any).dddice.api = new ThreeDDiceAPI(apiKey);
+        (window as any).dddice.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
         (window as any).dddice.api.connect(room);
         (window as any).dddice.api.listen(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
           rollCreated(roll),
