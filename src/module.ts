@@ -88,7 +88,12 @@ Hooks.once('init', async () => {
     default: '',
     config: false,
     restricted: true,
-    onChange: value => value && setUpDddiceSdk(),
+    onChange: async value => {
+      if (value) {
+        await setUpDddiceSdk();
+        await syncUserNamesAndColors();
+      }
+    },
   });
 
   game.settings.register('dddice', 'theme', {
@@ -125,6 +130,20 @@ Hooks.once('init', async () => {
   });
 });
 
+async function syncUserNamesAndColors() {
+  if (getCurrentRoom() && (game as Game).user) {
+    const room: IRoom = getCurrentRoom() as IRoom;
+    const user: IUser = game.user?.getFlag('dddice', 'user') as IUser;
+    const userParticipant = room.participants.find(
+      ({ user: { uuid: participantUuid } }) => participantUuid === user.uuid,
+    );
+    await (window as any).api.room.updateParticipant(room.slug, userParticipant.id, {
+      username: (game as Game).user?.name as string,
+      color: `${(game as Game).user?.border as string}`,
+    });
+  }
+}
+
 Hooks.once('ready', async () => {
   // if apiKey isn't set, create a guest account
   log.debug('ready hook');
@@ -151,6 +170,9 @@ Hooks.once('ready', async () => {
       },
     };
   }
+
+  // update dddice room participant names
+  await syncUserNamesAndColors();
 });
 
 Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
@@ -208,6 +230,12 @@ Hooks.on('updateChatMessage', (message, updateData, options) => {
 Hooks.on('renderChatMessage', (message, html, data) => {
   if (message._dddice_hide) {
     html.addClass('!hidden');
+  }
+});
+
+Hooks.on('updateUser', async (user: User) => {
+  if (user.isSelf) {
+    await syncUserNamesAndColors();
   }
 });
 
