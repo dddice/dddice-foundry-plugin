@@ -1,4 +1,5 @@
 /** @format */
+import { setUpDddiceSdk, syncUserNamesAndColors } from '../module';
 
 export default class StorageProvider {
   async getStorage(key: string): Promise<any> {

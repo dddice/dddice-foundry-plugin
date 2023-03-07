@@ -3,11 +3,13 @@ import { ConfigPanel } from './module/ConfigPanel';
 import {
   IRoll,
   IRoom,
+  IRoomParticipant,
   ITheme,
   IUser,
   ThreeDDice,
   ThreeDDiceAPI,
   ThreeDDiceRollEvent,
+  ThreeDDiceRoomEvent,
 } from 'dddice-js';
 import createLogger from './module/log';
 import {
@@ -80,6 +82,7 @@ Hooks.once('init', async () => {
     config: false,
   });
 
+  let roomSlug;
   game.settings.register('dddice', 'room', {
     name: 'Room',
     hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
@@ -89,7 +92,7 @@ Hooks.once('init', async () => {
     config: false,
     restricted: true,
     onChange: async value => {
-      if (value) {
+      if (value?.slug !== roomSlug) {
         await setUpDddiceSdk();
         await syncUserNamesAndColors();
       }
@@ -134,13 +137,18 @@ async function syncUserNamesAndColors() {
   if (getCurrentRoom() && (game as Game).user) {
     const room: IRoom = getCurrentRoom() as IRoom;
     const user: IUser = game.user?.getFlag('dddice', 'user') as IUser;
+    log.debug('user', user);
+    log.debug('room', room);
     const userParticipant = room.participants.find(
       ({ user: { uuid: participantUuid } }) => participantUuid === user.uuid,
     );
-    await (window as any).api.room.updateParticipant(room.slug, userParticipant.id, {
-      username: (game as Game).user?.name as string,
-      color: `${(game as Game).user?.border as string}`,
-    });
+    log.debug('syncUserNamesAndColors', userParticipant);
+    if (userParticipant) {
+      await (window as any).api.room.updateParticipant(room.slug, userParticipant.id, {
+        username: (game as Game).user?.name as string,
+        color: `${(game as Game).user?.border as string}`,
+      });
+    }
   }
 }
 
@@ -185,14 +193,14 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   }
 });
 
-Hooks.on('createChatMessage', async chatMessage => {
+Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
   log.debug('calling Create Chat Message hook', chatMessage);
   const rolls = chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
   if (rolls?.length > 0) {
     // remove the sound v10
     mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
 
-    if (game.settings.get('dddice', 'render mode') === 'on') {
+    if (game.settings.get('dddice', 'render mode') === 'on' && chatMessage.isContentVisible) {
       chatMessage._dddice_hide = true;
     }
 
@@ -203,18 +211,44 @@ Hooks.on('createChatMessage', async chatMessage => {
       log.debug('formatted dddice roll', dddiceRoll);
       if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
         try {
+          let participantIds;
+          const whisper: IUser[] = chatMessage.whisper.map(
+            user =>
+              (game as Game).users
+                .find((u: User) => u.id === user)
+                ?.getFlag('dddice', 'user') as IUser,
+          );
+          log.debug('whisper', whisper);
+          if (whisper?.length > 0 && room?.participants) {
+            if (
+              chatMessage.isContentVisible &&
+              !whisper.some(u => u.uuid === game.user.getFlag('dddice', 'user').uuid)
+            ) {
+              whisper.push(game.user.getFlag('dddice', 'user'));
+            }
+            participantIds = whisper
+              .map(
+                (user: IUser) =>
+                  room.participants.find(
+                    ({ user: { uuid: participantUuid } }) => participantUuid === user.uuid,
+                  )?.id,
+              )
+              .filter(i => i);
+          }
+
           const dddiceRollResponse: IRoll = (
             await (window as any).api.roll.create(dddiceRoll.dice, {
               room: room?.slug,
               operator: dddiceRoll.operator,
               external_id: 'foundryVTT:' + chatMessage.uuid,
+              whisper: participantIds,
             })
           ).data;
 
           await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
         } catch (e) {
           console.error(e);
-          ui.notifications?.error(`dddice | ${e}`);
+          ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
           chatMessage._dddice_hide = false;
         }
       }
@@ -324,12 +358,15 @@ async function createGuestUserIfNeeded() {
     }
     quitSetup = true;
   } else {
-    const room = getCurrentRoom();
+    let room = getCurrentRoom();
     if (room?.slug) {
       try {
-        await (window as any).api.room.join(room.slug);
+        room = (await (window as any).api.room.join(room.slug)).data;
+        if (game.user?.isGM) {
+          await game.settings.set('dddice', 'room', JSON.stringify(room));
+        }
       } catch (error) {
-        log.warn('eating error', error);
+        log.warn('eating error', error.response.data.data.message);
       }
     }
   }
@@ -352,7 +389,10 @@ async function setUpDddiceSdk() {
 
       if ((window as any).dddice) {
         // clear the board
-        if (canvas) canvas.remove();
+        if (canvas) {
+          canvas.remove();
+          canvas = undefined;
+        }
         // disconnect from echo
         if ((window as any).dddice.api?.connection)
           (window as any).dddice.api.connection.disconnect();
@@ -361,6 +401,7 @@ async function setUpDddiceSdk() {
       }
 
       if (game.settings.get('dddice', 'render mode') === 'on') {
+        log.info('render mode is on');
         if (!canvas) {
           // add canvas element to document
           canvas = document.createElement('canvas');
@@ -378,7 +419,7 @@ async function setUpDddiceSdk() {
         }
         (window as any).dddice = new ThreeDDice(canvas, apiKey, 'Foundry VTT');
         (window as any).dddice.start();
-        (window as any).dddice.connect(room);
+        (window as any).dddice.connect(room, undefined, user.uuid);
         (window as any).dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
           rollCreated(roll),
         );
@@ -388,17 +429,25 @@ async function setUpDddiceSdk() {
         );
         new SdkBridge().preloadTheme(getCurrentTheme());
       } else {
+        log.info('render mode is off');
         (window as any).dddice = new ThreeDDice();
         (window as any).dddice.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
-        (window as any).dddice.api.connect(room);
+        (window as any).dddice.api.connect(room, undefined, user.uuid);
         (window as any).dddice.api.listen(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
           rollCreated(roll),
         );
       }
+
+      if ((game as Game).user?.isGM) {
+        (window as any).dddice.api.listen(ThreeDDiceRoomEvent.RoomUpdated, async room => {
+          await game.settings.set('dddice', 'room', JSON.stringify(room));
+        });
+      }
+
       ui.notifications?.info('dddice is ready to roll!');
     } catch (e) {
       console.error(e);
-      ui.notifications?.error(e);
+      ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
       notConnectedMessage();
       return;
     }
@@ -487,12 +536,23 @@ const rollCreated = async (roll: IRoll) => {
 
     if (shouldIMakeTheChat) {
       const foundryVttRoll: Roll = convertDddiceRollModelToFVTTRollModel(roll);
+
+      let whisper;
+      if (roll.participants) {
+        whisper = roll.participants.map(({ participant }) =>
+          game.users.find(
+            (user: User) => (user as User).getFlag('dddice', 'user').uuid === participant.user.uuid,
+          ),
+        );
+      }
+
       await foundryVttRoll.toMessage(
         {
+          whisper,
           speaker: {
             alias: roll.room.participants.find(
               participant => participant.user.uuid === roll.user.uuid,
-            ).username,
+            )?.username,
           },
           flags: {
             dddice: {
@@ -500,7 +560,7 @@ const rollCreated = async (roll: IRoll) => {
             },
           },
         },
-        { create: true },
+        { rollMode: roll.participants ? 'gmroll' : 'publicroll', create: true },
       );
     }
   }
@@ -526,3 +586,5 @@ const rollFinished = async (roll: IRoll) => {
     }
   }
 };
+
+export { setUpDddiceSdk, syncUserNamesAndColors };

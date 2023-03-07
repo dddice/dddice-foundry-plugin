@@ -30,7 +30,7 @@ const RoomCard = (props: IRoomCardProps) => {
         </div>
       </div>
       <div className="ml-6 mt-1 flex flex-row-reverse flex-wrap">
-        {room.participants.length >= 4 && (
+        {room.participants.length > 4 && (
           <span
             className={classNames(
               'relative transform hover:scale-105 transition-all duration-200 mr-1 mb-1',
