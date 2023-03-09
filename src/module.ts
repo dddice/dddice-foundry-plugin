@@ -140,7 +140,7 @@ async function syncUserNamesAndColors() {
     log.debug('user', user);
     log.debug('room', room);
     const userParticipant = room.participants.find(
-      ({ user: { uuid: participantUuid } }) => participantUuid === user.uuid,
+      ({ user: { uuid: participantUuid } }) => participantUuid === user?.uuid,
     );
     log.debug('syncUserNamesAndColors', userParticipant);
     if (userParticipant) {
@@ -230,7 +230,7 @@ Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
               .map(
                 (user: IUser) =>
                   room.participants.find(
-                    ({ user: { uuid: participantUuid } }) => participantUuid === user.uuid,
+                    ({ user: { uuid: participantUuid } }) => participantUuid === user?.uuid,
                   )?.id,
               )
               .filter(i => i);
@@ -417,7 +417,12 @@ async function setUpDddiceSdk() {
               (window as any).dddice.resize(window.innerWidth, window.innerHeight),
           );
         }
-        (window as any).dddice = new ThreeDDice(canvas, apiKey, 'Foundry VTT');
+        (window as any).dddice = new ThreeDDice().initialize(
+          canvas,
+          apiKey,
+          undefined,
+          'Foundry VTT',
+        );
         (window as any).dddice.start();
         (window as any).dddice.connect(room, undefined, user.uuid);
         (window as any).dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
