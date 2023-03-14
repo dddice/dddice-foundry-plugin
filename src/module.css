@@ -1,5 +1,15 @@
 /** @format */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.dddice {
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+}
+
+.dddice-hidden {
+  display: none;
+}
+
+.\!dddice-hidden {
+  display: none !important;
+}

@@ -4,9 +4,6 @@ const defaultTheme = require('tailwindcss/defaultTheme');
 
 const config = {
   safelist: ['hidden', '!hidden'],
-  corePlugins: {
-    preflight: false,
-  },
   content: ['./src/**/*.{html,ts,tsx}', './src/*.{html,ts,tsx}'],
   theme: {
     extend: {
@@ -38,22 +35,66 @@ const config = {
         success: '#439775',
         warning: '#FDE96F',
       },
+      // redefine tailwinds font sizes to be pixels because D&D Beyond and Roll20 specify
+      // different root text sizes and this makes shared elements look different if rem is
+      // used, as is default for tailwinds
       fontSize: {
-        xs: '0.5rem',
-        sm: '0.8rem',
-        md: '1rem',
-        base: '1rem',
-        xl: '1.25rem',
-        '2xl': '1.563rem',
-        '3xl': '1.953rem',
-        '4xl': '2.441rem',
-        ' 5xl': '3.052rem',
+        xxs: ['8px', '12px'],
+        xs: ['12px', '16px'],
+        sm: ['14px', '20px'],
+        md: ['16px', '24px'],
+        base: ['16px', '24px'],
+        xl: ['20px', '28px'],
+        '2xl': ['24px', '32px'],
+        '3xl': ['30px', '36px'],
+        '4xl': ['36px', '40px'],
+        '5xl': ['48px', '1'],
       },
       fontFamily: {
         sans: ['Mulish', ...defaultTheme.fontFamily.sans],
       },
       minWidth: {
         6: '1.5rem',
+      },
+      // redefine tailwinds spacing to be pixels because D&D Beyond and Roll20 specify
+      // different root text sizes and this makes shared elements look different if rem is
+      // used, as is default for tailwinds
+      spacing: {
+        0: '0px',
+        px: '1px',
+        0.5: '2px',
+        1: '4px',
+        1.5: '6px',
+        2: '8px',
+        2.5: '10px',
+        3: '12px',
+        3.5: '14px',
+        4: '16px',
+        5: '20px',
+        6: '24px',
+        7: '28px',
+        8: '32px',
+        9: '36px',
+        10: '40px',
+        11: '44px',
+        12: '48px',
+        14: '56px',
+        16: '64px',
+        20: '80px',
+        24: '96px',
+        28: '112px',
+        32: '128px',
+        36: '144px',
+        40: '160px',
+        44: '176px',
+        48: '192px',
+        52: '208px',
+        56: '224px',
+        60: '240px',
+        64: '256px',
+        72: '288px',
+        80: '320px',
+        96: '384px',
       },
       zIndex: {
         60: '60',
