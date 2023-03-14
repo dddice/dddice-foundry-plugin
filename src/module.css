@@ -1,5 +1,7 @@
 /** @format */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.dddice {
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+}

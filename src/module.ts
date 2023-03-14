@@ -406,8 +406,15 @@ async function setUpDddiceSdk() {
           // add canvas element to document
           canvas = document.createElement('canvas');
           canvas.id = 'dddice-canvas';
-          canvas.className = 'fixed top-0 h-screen w-screen opacity-100 pointer-events-none';
-          canvas.setAttribute('style', 'z-index:1000');
+          // if the css fails to load for any reason, using tailwinds classes here
+          // will disable the whole interface
+          canvas.style.top = '0px';
+          canvas.style.position = 'fixed';
+          canvas.style.pointerEvents = 'none';
+          canvas.style.zIndex = '100000';
+          canvas.style.opacity = '100';
+          canvas.style.height = '100vh';
+          canvas.style.width = '100vw';
           document.body.appendChild(canvas);
           window.addEventListener(
             'resize',
@@ -492,13 +499,15 @@ const sendWelcomeMessage = () => {
         <h3 class="nue">dddice | 3D Dice Roller</h3>
         <p class="nue">Your game has been configured to use the dddice 3D dice roller.</p>
         <p class="nue">Everything is all set up and ready to roll! you will be rolling these dice:</p>
-        <div
-          class="flex flex-col border bg-no-repeat bg-contain bg-center rounded border-gray-300 border-solid border-2 bg-gray-800 p-2 pl-1 mb-2"
-          style="background-image: url(${theme.preview?.preview}); background-color: ${theme.label?.background_color}"
-        >
-          <div class="flex flex-row">
-            <div class="flex text-white rounded bg-gray-800 bg-opacity-50 px-1 text-lg font-bold">
-              ${theme.name}
+        <div class='dddice'>
+          <div
+            class="flex flex-col border bg-no-repeat bg-contain bg-center rounded border-gray-300 border-solid border-2 bg-gray-800 p-2 pl-1 mb-2"
+            style="background-image: url(${theme.preview?.preview}); background-color: ${theme.label?.background_color}"
+          >
+            <div class="flex flex-row">
+              <div class="flex text-white rounded bg-gray-800 bg-opacity-50 px-1 text-lg font-bold">
+                ${theme.name}
+              </div>
             </div>
           </div>
         </div>
