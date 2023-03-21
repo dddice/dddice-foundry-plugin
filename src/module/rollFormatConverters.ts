@@ -153,54 +153,91 @@ export function convertFVTTRollModelToDddiceRollModel(
   operator: object;
 } {
   let operator;
+  const flattenedRollEquation: any = [];
+  fvttRolls.map(roll => {
+    const stack: any = [];
+
+    let curr: any = roll;
+    while (curr) {
+      log.debug('curr.rolls', curr.rolls);
+      log.debug('stack', stack);
+      if (curr.rolls) {
+        curr.rolls.map(i => stack.push(i));
+      } else if (curr.terms) {
+        curr.terms.map(i => stack.push(i));
+      } else if (curr.term) {
+        stack.push(curr.term);
+      } else if (curr.operands) {
+        if (curr.operator !== '*') {
+          stack.push(curr.operands[0]);
+          stack.push({ operator: curr.operator });
+        }
+        stack.push(curr.operands[1]);
+      } else {
+        flattenedRollEquation.unshift(curr);
+      }
+      curr = stack.pop();
+    }
+    log.debug('flattenedRollEquation', flattenedRollEquation);
+  });
+
   return {
-    dice: fvttRolls
-      .flatMap(roll =>
-        roll.terms
-          .reduce((prev, next) => {
-            // reduce to combine operators + or - with the numeric term after them
-            if (next instanceof NumericTerm) {
-              if (prev.length > 0) {
-                const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
-                prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
+    dice: flattenedRollEquation
+      .reduce((prev, next) => {
+        // reduce to combine operators + or - with the numeric term after them
+
+        if (next instanceof NumericTerm) {
+          if (prev.length > 0) {
+            const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
+            prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
+          }
+        } else if (next.rolls && next.rolls.length > 0) {
+          log.debug(
+            'found some nested rolls',
+            next.rolls.flatMap(roll => roll.terms),
+          );
+          // for pathfinder 2e
+          next.rolls.map(roll => roll.terms.map(term => prev.push(term)));
+        } else {
+          prev.push(next);
+        }
+        return prev;
+      }, [])
+      .flatMap(term => {
+        log.debug('term', term);
+        log.debug('term.faces', term.faces);
+        log.debug('term.results', term.results);
+        log.debug('term.results && term.faces', term.results && term.faces);
+        if (term.results && term.faces) {
+          return term.results.flatMap(result => {
+            operator = term.modifiers.reduce((prev, current) => {
+              const keep = current.match(/k(l|h)?(\d+)?/);
+              if (keep.length == 3) {
+                prev['k'] = `${keep[1]}${keep[2]}`;
+              } else if (keep.length == 2) {
+                prev['k'] = `${keep[1]}1`;
+              } else if (keep.length == 1) {
+                if (prev === 'k') {
+                  prev['k'] = 'h1';
+                }
               }
-            } else {
-              prev.push(next);
+              return prev;
+            }, {});
+            if (term.faces === 100) {
+              return convertD100toD10x(theme, result.result);
             }
-            return prev;
-          }, [])
-          .flatMap(term => {
-            if (term instanceof DiceTerm) {
-              return term.results.flatMap(result => {
-                operator = term.modifiers.reduce((prev, current) => {
-                  const keep = current.match(/k(l|h)?(\d+)?/);
-                  if (keep.length == 3) {
-                    prev['k'] = `${keep[1]}${keep[2]}`;
-                  } else if (keep.length == 2) {
-                    prev['k'] = `${keep[1]}1`;
-                  } else if (keep.length == 1) {
-                    if (prev === 'k') {
-                      prev['k'] = 'h1';
-                    }
-                  }
-                  return prev;
-                }, {});
-                if (term.faces === 100) {
-                  return convertD100toD10x(theme, result.result);
-                }
-                if (term.faces === 0) {
-                  return null;
-                } else {
-                  return { type: `d${term.faces}`, value: result.result, theme };
-                }
-              });
-            } else if (term.type === 'mod') {
-              return term;
-            } else {
+            if (term.faces === 0) {
               return null;
+            } else {
+              return { type: `d${term.faces}`, value: result.result, theme };
             }
-          }),
-      )
+          });
+        } else if (term.type === 'mod') {
+          return term;
+        } else {
+          return null;
+        }
+      })
       .filter(i => i),
     operator,
   };

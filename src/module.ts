@@ -574,7 +574,7 @@ const rollCreated = async (roll: IRoll) => {
             },
           },
         },
-        { rollMode: roll.participants ? 'gmroll' : 'publicroll', create: true },
+        { rollMode: roll.participants?.length > 0 ? 'gmroll' : 'publicroll', create: true },
       );
     }
   }
