@@ -212,13 +212,15 @@ export function convertFVTTRollModelToDddiceRollModel(
           return term.results.flatMap(result => {
             operator = term.modifiers.reduce((prev, current) => {
               const keep = current.match(/k(l|h)?(\d+)?/);
-              if (keep.length == 3) {
-                prev['k'] = `${keep[1]}${keep[2]}`;
-              } else if (keep.length == 2) {
-                prev['k'] = `${keep[1]}1`;
-              } else if (keep.length == 1) {
-                if (prev === 'k') {
-                  prev['k'] = 'h1';
+              if (keep) {
+                if (keep.length == 3) {
+                  prev['k'] = `${keep[1]}${keep[2]}`;
+                } else if (keep.length == 2) {
+                  prev['k'] = `${keep[1]}1`;
+                } else if (keep.length == 1) {
+                  if (prev === 'k') {
+                    prev['k'] = 'h1';
+                  }
                 }
               }
               return prev;
@@ -226,7 +228,7 @@ export function convertFVTTRollModelToDddiceRollModel(
             if (term.faces === 100) {
               return convertD100toD10x(theme, result.result);
             }
-            if (term.faces === 0) {
+            if (term.faces === 0 || (!operator.k && !result.active)) {
               return null;
             } else {
               return { type: `d${term.faces}`, value: result.result, theme };
