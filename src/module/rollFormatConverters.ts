@@ -190,6 +190,8 @@ export function convertFVTTRollModelToDddiceRollModel(
           if (prev.length > 0) {
             const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
             prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
+          } else {
+            prev.push({ type: 'mod', value: next.number, theme });
           }
         } else if (next.rolls && next.rolls.length > 0) {
           log.debug(
