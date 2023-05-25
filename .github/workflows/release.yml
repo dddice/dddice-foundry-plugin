@@ -5,14 +5,16 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release Tag'
+      increment_version:
+        description: 'Increment Version'
         required: true
-        type: string
-      force:
-        description: 'Force Release'
-        default: false
-        type: boolean
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - none
 
 jobs:
   release:
@@ -26,10 +28,24 @@ jobs:
         with:
           fetch-depth: 0 # fetch all history for git-cliff
 
+
+      - name: Calculate Version Number
+        id: version
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          VERSION=${TAG#v}
+          echo "latest version: $VERSION"
+          if [ "$INCREMENT" != "none" ]; then
+            VERSION=$(npx --yes semver -i "$INCREMENT" "$VERSION")
+          fi
+          echo "new version: $VERSION"
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Update Version
         run: |
-          npm --no-git-tag-version --allow-same-version version $VERSION
-          MANIFEST=$(cat src/manifest.json | jq ".version |= \"${VERSION/v/}\"")
+          npm --no-git-tag-version --allow-same-version version ${{ steps.version.outputs.version }}
+          MANIFEST=$(cat src/manifest.json | jq ".version |= \"${{ steps.version.outputs.version }}\"")
           echo "$MANIFEST" > src/manifest.json
 
       - name: Commit
@@ -37,31 +53,25 @@ jobs:
           git add .
           git config user.email "developers@dddice.com"
           git config user.name "dddice"
-          git commit --allow-empty -m "release: ${{ github.event.inputs.tag }}-${{ github.run_number }}" || echo 'ok'
+          git commit --allow-empty -m "release: ${{ steps.version.outputs.tag }}-${{ github.run_number }}" || echo 'ok'
           git push
 
       - name: Tag
-        if: inputs.force == false
+        if: inputs.increment_version != 'none'
         run: |
-          git tag ${{ github.event.inputs.tag }}
-          git push origin ${{ github.event.inputs.tag }}
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
 
       - name: Tag (Force)
-        if: inputs.force
+        if: inputs.increment_version == 'none'
         run: |
-          git tag -f ${{ github.event.inputs.tag }}
-          git push -f origin ${{ github.event.inputs.tag }}
+          git tag -f ${{ steps.version.outputs.tag }}
+          git push -f origin ${{ steps.version.outputs.tag }}
 
       - name: Build Release
         run: |
           npm ci
           npm run build
-
-      - name: Set Env
-        id: version
-        run: |
-          TAG=${{ github.event.inputs.tag }}
-          echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
 
       # Substitute the Manifest and Download URLs in the module.json
       - name: Substitute Manifest and Download Links For Versioned Ones
@@ -70,10 +80,10 @@ jobs:
         with:
           files: './dist/module.json'
         env:
-          version: ${{ steps.version.outputs.VERSION }}
+          version: ${{ steps.version.outputs.version }}
           url: https://github.com/${{github.repository}}
           manifest: https://github.com/${{github.repository}}/releases/latest/download/module.json
-          download: https://github.com/${{github.repository}}/releases/download/${{github.event.inputs.tag}}/module.zip
+          download: https://github.com/${{github.repository}}/releases/download/${{steps.version.outputs.tag}}/module.zip
 
       # Create a zip file with all files required by the module to add to the release
       - run: cd dist && zip -r ../module.zip .
@@ -101,20 +111,20 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true # Set this to false if you want to prevent updating existing releases
-          name: ${{ github.event.inputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './dist/module.json, ./module.zip'
-          tag: ${{ github.event.inputs.tag }}
+          tag: ${{ steps.version.outputs.tag }}
           body: ${{ steps.release.outputs.RELEASE_BODY }}
 
       - name: Publish to Foundry Admin
         run: npx @ghost-fvtt/foundry-publish
         env:
           FVTT_MANIFEST_PATH: ./dist/module.json
-          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{github.event.inputs.tag}}/module.json
-          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{github.event.inputs.tag}}
+          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{steps.version.outputs.tag}}/module.json
+          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{steps.version.outputs.tag}}
           FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
           FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
           FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
