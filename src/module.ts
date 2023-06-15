@@ -195,7 +195,7 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
 
 Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
   log.debug('calling Create Chat Message hook', chatMessage);
-  const rolls = chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
+  const rolls = chatMessage?.isRoll && chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
   if (rolls?.length > 0) {
     // remove the sound v10
     mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
