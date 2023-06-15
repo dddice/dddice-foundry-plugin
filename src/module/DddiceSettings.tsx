@@ -95,6 +95,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
 
   /**
    * Connect to VTT
+   * Mount / Unmount
    */
   useEffect(() => {
     async function connect() {
@@ -127,7 +128,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
         theme,
         rooms,
         themes,
-        renderMode: renderMode === undefined ? true : renderMode,
+        renderMode,
       }));
     }
 
@@ -142,9 +143,9 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
     setLoadingMessage('Loading themes (1)');
     let _themes = (await api.current.diceBox.list()).data;
 
-    const page = 2;
+    let page = 1;
     while (_themes) {
-      setLoadingMessage(`Loading themes (${page})`);
+      setLoadingMessage(`Loading themes (${page++})`);
       themes = [...themes, ..._themes];
       _themes = (await api.current.diceBox.next())?.data;
     }
@@ -155,6 +156,17 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
     }));
     popLoading();
   };
+
+  const refreshRoom = useCallback(async () => {
+    if (state?.room?.slug) {
+      setLoadingMessage('refreshing room data');
+      pushLoading();
+      const room = (await api.current.room.get(state.room.slug)).data;
+      storageProvider.setStorage({ room });
+      setState(state => ({ ...state, room }));
+      popLoading();
+    }
+  }, [state?.room?.slug]);
 
   const refreshRooms = async () => {
     setLoadingMessage('Loading rooms list');
@@ -175,6 +187,10 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
         try {
           if (!state.rooms || state.rooms.length === 0) {
             await refreshRooms();
+          }
+
+          if (state.room) {
+            await refreshRoom();
           }
 
           if (!state.themes || state.themes.length === 0) {
@@ -431,7 +447,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
                         <Toggle
                           value={state.renderMode}
                           onChange={async value => {
-                            setState(state => ({ ...state, renderMode: !value }));
+                            setState(state => ({ ...state, renderMode: value }));
                             await storageProvider.setStorage({ 'render mode': value });
                             sdkBridge.reloadDiceEngine();
                           }}

@@ -291,7 +291,7 @@ function getCurrentRoom() {
 
 async function createGuestUserIfNeeded() {
   let didSetup = false;
-  let quitSetup = false;
+  const quitSetup = false;
   let justCreatedAnAccount = false;
   let apiKey = game.settings.get('dddice', 'apiKey') as string;
   if (!apiKey) {
@@ -356,7 +356,7 @@ async function createGuestUserIfNeeded() {
         await game.settings.set('dddice', 'room', JSON.stringify(room));
       }
     }
-    quitSetup = true;
+    //quitSetup = true;
   } else {
     let room = getCurrentRoom();
     if (room?.slug) {
@@ -465,8 +465,9 @@ async function setUpDddiceSdk() {
     }
   }
 
-  if (shouldSendWelcomeMessage) {
+  if (!game.user.getFlag('dddice', 'welcomeMessageShown')) {
     sendWelcomeMessage();
+    game.user.setFlag('dddice', 'welcomeMessageShown', true);
   }
 }
 
@@ -495,7 +496,7 @@ const sendWelcomeMessage = () => {
       whisper: [game.user.id],
       speaker: { alias: 'dddice' },
       content: `
-      <div class="message-content dddice-welcome-message">
+      <div class="dddice-welcome-message">
         <h3 class="nue">dddice | 3D Dice Roller</h3>
         <p class="nue">Your game has been configured to use the dddice 3D dice roller.</p>
         <p class="nue">Everything is all set up and ready to roll! you will be rolling these dice:</p>

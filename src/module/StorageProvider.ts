@@ -24,7 +24,7 @@ export default class StorageProvider {
           resolve(value);
         }
       } else if (key === 'render mode') {
-        resolve(value === 'on');
+        resolve(value === 'on' || value === undefined);
       } else {
         resolve(value);
       }
@@ -36,8 +36,7 @@ export default class StorageProvider {
       Object.entries(payload).map(([key, value]) => {
         if (key === 'theme' || key === 'room') {
           game.settings.set('dddice', key, JSON.stringify(value));
-        }
-        if (key === 'render mode') {
+        } else if (key === 'render mode') {
           game.settings.set('dddice', 'render mode', value ? 'on' : 'off');
         } else {
           game.settings.set('dddice', key, value);
@@ -47,6 +46,12 @@ export default class StorageProvider {
   }
 
   async removeStorage(key: string): Promise<any> {
-    return undefined;
+    if (key === 'theme' || key === 'room') {
+      return game.settings.set('dddice', key, '');
+    } else if (key === 'render mode') {
+      return game.settings.set('dddice', 'render mode', 'on');
+    } else {
+      return game.settings.set('dddice', key, undefined);
+    }
   }
 }
