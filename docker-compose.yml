@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   v10:
-    image: felddy/foundryvtt:release-10.291.0
+    image: felddy/foundryvtt:10
     hostname: my_foundry_host
     init: true
     volumes:
@@ -19,7 +19,7 @@ services:
         protocol: tcp
 
   v11:
-    image: felddy/foundryvtt:release-11
+    image: felddy/foundryvtt:11
     hostname: my_foundry_host
     init: true
     volumes:

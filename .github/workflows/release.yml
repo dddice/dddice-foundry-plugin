@@ -19,6 +19,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      INCREMENT: ${{ github.event.inputs.increment_version }}
     steps:
       - name: Setup Volta
         uses: volta-cli/action@v4
