@@ -248,6 +248,8 @@ Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
         } catch (e) {
           console.error(e);
           ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
+          $(`[data-message-id=${chatMessage.id}]`).removeClass('!dddice-hidden');
+          window.ui.chat.scrollBottom({ popout: true });
           chatMessage._dddice_hide = false;
         }
       }
