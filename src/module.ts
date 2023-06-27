@@ -3,7 +3,6 @@ import { ConfigPanel } from './module/ConfigPanel';
 import {
   IRoll,
   IRoom,
-  IRoomParticipant,
   ITheme,
   IUser,
   ThreeDDice,
@@ -14,10 +13,10 @@ import {
 import createLogger from './module/log';
 import {
   convertDddiceRollModelToFVTTRollModel,
-  convertDiceSoNiceRollToDddiceRoll,
   convertFVTTRollModelToDddiceRollModel,
 } from './module/rollFormatConverters';
 import SdkBridge from './module/SdkBridge';
+import { v4 as uuidv4 } from 'uuid';
 
 const log = createLogger('module');
 const pendingRollsFromShowForRoll = new Map<string, () => void>();
@@ -28,7 +27,7 @@ const showForRoll = (...args) => {
   const room = getCurrentRoom();
   const theme = getCurrentTheme();
   const dddiceRoll = convertFVTTRollModelToDddiceRollModel([args[0]], theme?.id as string);
-  const uuid = 'dsnFreeRoll:' + self.crypto.randomUUID();
+  const uuid = 'dsnFreeRoll:' + uuidv4();
   if (room && theme && dddiceRoll) {
     (window as any).api.roll.create(dddiceRoll.dice, {
       room: room.slug,
@@ -366,7 +365,7 @@ async function createGuestUserIfNeeded() {
           await game.settings.set('dddice', 'room', JSON.stringify(room));
         }
       } catch (error) {
-        log.warn('eating error', error.response.data.data.message);
+        log.warn('eating error', error.response?.data?.data?.message);
       }
     }
   }

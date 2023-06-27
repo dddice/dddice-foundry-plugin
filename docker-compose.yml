@@ -19,7 +19,7 @@ services:
         protocol: tcp
 
   v11:
-    image: felddy/foundryvtt:11
+    image: felddy/foundryvtt:11.302
     hostname: my_foundry_host
     init: true
     volumes:
