@@ -23,6 +23,10 @@ const pendingRollsFromShowForRoll = new Map<string, () => void>();
 
 require('dddice-js');
 
+// to store last room slug, to de-dupe room changes
+// by comparing room slugs and not whole objects (like foundry does automatically)
+let roomSlug;
+
 const showForRoll = (...args) => {
   const room = getCurrentRoom();
   const theme = getCurrentTheme();
@@ -81,7 +85,6 @@ Hooks.once('init', async () => {
     config: false,
   });
 
-  let roomSlug;
   game.settings.register('dddice', 'room', {
     name: 'Room',
     hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
@@ -91,7 +94,10 @@ Hooks.once('init', async () => {
     config: false,
     restricted: true,
     onChange: async value => {
-      if (value?.slug !== roomSlug) {
+      const room = JSON.parse(value);
+      if (room?.slug && room?.slug !== roomSlug) {
+        roomSlug = value.slug;
+        console.error('room changed');
         await setUpDddiceSdk();
         await syncUserNamesAndColors();
       }
@@ -380,6 +386,7 @@ async function setUpDddiceSdk() {
   const [shouldSendWelcomeMessage, shouldStopSetup] = await createGuestUserIfNeeded();
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
   const room = getCurrentRoom()?.slug;
+  roomSlug = room;
   if (apiKey && room && !shouldStopSetup) {
     try {
       (window as any).api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');

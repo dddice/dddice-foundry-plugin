@@ -15,6 +15,10 @@ on:
           - minor
           - patch
           - none
+      prerelease:
+        description: 'Prerelease'
+        default: false
+        type: boolean
 
 jobs:
   release:
@@ -38,7 +42,7 @@ jobs:
           VERSION=${TAG#v}
           echo "latest version: $VERSION"
           if [ "$INCREMENT" != "none" ]; then
-            VERSION=$(npx --yes semver -i "$INCREMENT" "$VERSION")
+            VERSION=$(npx --yes semver -i "${{ (github.event.inputs.prerelease) && 'pre' || '' }}$INCREMENT" --preid rc "$VERSION")
           fi
           echo "new version: $VERSION"
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
@@ -122,6 +126,7 @@ jobs:
           body: ${{ steps.release.outputs.RELEASE_BODY }}
 
       - name: Publish to Foundry Admin
+        if: !github.events.inputs.prerelease
         run: npx @ghost-fvtt/foundry-publish
         env:
           FVTT_MANIFEST_PATH: ./dist/module.json
