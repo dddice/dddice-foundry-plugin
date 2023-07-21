@@ -126,7 +126,7 @@ jobs:
           body: ${{ steps.release.outputs.RELEASE_BODY }}
 
       - name: Publish to Foundry Admin
-        if: !github.events.inputs.prerelease
+        if: inputs.prerelease == false
         run: npx @ghost-fvtt/foundry-publish
         env:
           FVTT_MANIFEST_PATH: ./dist/module.json
