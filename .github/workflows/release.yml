@@ -42,7 +42,7 @@ jobs:
           VERSION=${TAG#v}
           echo "latest version: $VERSION"
           if [ "$INCREMENT" != "none" ]; then
-            VERSION=$(npx --yes semver -i "${{ (github.event.inputs.prerelease) && 'pre' || '' }}$INCREMENT" --preid rc "$VERSION")
+            VERSION=$(npx --yes semver -i "${{ (github.event.inputs.prerelease == 'true') && 'pre' || '' }}$INCREMENT" --preid rc "$VERSION")
           fi
           echo "new version: $VERSION"
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
@@ -119,14 +119,15 @@ jobs:
           allowUpdates: true # Set this to false if you want to prevent updating existing releases
           name: ${{ steps.version.outputs.tag }}
           draft: false
-          prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './dist/module.json, ./module.zip'
           tag: ${{ steps.version.outputs.tag }}
           body: ${{ steps.release.outputs.RELEASE_BODY }}
+          prerelease: ${{ inputs.prerelease }}
+
 
       - name: Publish to Foundry Admin
-        if: !github.events.inputs.prerelease
+        if: github.event.inputs.prerelease != 'true'
         run: npx @ghost-fvtt/foundry-publish
         env:
           FVTT_MANIFEST_PATH: ./dist/module.json
