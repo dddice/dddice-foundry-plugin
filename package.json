@@ -6,7 +6,7 @@
     "src/templates/ConfigPanel.html"
   ],
   "browserslist": "> 0.5%, last 2 versions, not dead",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Roll 3D digital dice using Foundry VTT.",
   "repository": {
     "type": "git",
