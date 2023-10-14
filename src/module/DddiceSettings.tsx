@@ -162,7 +162,9 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
       setLoadingMessage('refreshing room data');
       pushLoading();
       const room = (await api.current.room.get(state.room.slug)).data;
-      storageProvider.setStorage({ room });
+      if (permissionProvider.canChangeRoom()) {
+        storageProvider.setStorage({ room });
+      }
       setState(state => ({ ...state, room }));
       popLoading();
     }
@@ -261,7 +263,9 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
 
       ReactTooltip.hide();
       if (room) {
-        await storageProvider.setStorage({ room });
+        if (permissionProvider.canChangeRoom()) {
+          await storageProvider.setStorage({ room });
+        }
         await reloadDiceEngine();
       }
     },
@@ -294,7 +298,9 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
       ...storage,
       room: newRoom,
     }));
-    await storageProvider.setStorage({ room: newRoom });
+    if (permissionProvider.canChangeRoom()) {
+      await storageProvider.setStorage({ room: newRoom });
+    }
     popLoading();
     await reloadDiceEngine();
   }, [state.rooms]);
