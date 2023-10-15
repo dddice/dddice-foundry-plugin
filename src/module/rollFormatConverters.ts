@@ -134,7 +134,7 @@ export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll 
               discarded: value.is_dropped,
               result: parseInt(value.value_to_display),
             })),
-          }),
+          } as any as RollTerm),
         );
       }
       return prev;
@@ -181,6 +181,7 @@ export function convertFVTTRollModelToDddiceRollModel(
     log.debug('flattenedRollEquation', flattenedRollEquation);
   });
 
+  let multIndex = 0;
   return {
     dice: flattenedRollEquation
       .reduce((prev, next) => {
@@ -188,7 +189,9 @@ export function convertFVTTRollModelToDddiceRollModel(
 
         if (next instanceof NumericTerm) {
           if (prev.length > 0) {
-            const multiplier = prev[prev.length - 1].operator === '-' ? -1 : 1;
+            const multiplier =
+              (prev[prev.length - 1].operator === '-' ? -1 : 1) * (next.options.crit ?? 1);
+
             prev[prev.length - 1] = { type: 'mod', value: next.number * multiplier, theme };
           } else {
             prev.push({ type: 'mod', value: next.number, theme });
@@ -212,31 +215,48 @@ export function convertFVTTRollModelToDddiceRollModel(
         log.debug('term.results && term.faces', term.results && term.faces);
         if (term.results && term.faces) {
           return term.results.flatMap(result => {
-            operator = term.modifiers.reduce((prev, current) => {
-              const keep = current.match(/k(l|h)?(\d+)?/);
-              if (keep) {
-                if (keep.length == 3) {
-                  prev['k'] = `${keep[1]}${keep[2]}`;
-                } else if (keep.length == 2) {
-                  prev['k'] = `${keep[1]}1`;
-                } else if (keep.length == 1) {
-                  if (prev === 'k') {
-                    prev['k'] = 'h1';
+            operator = {
+              ...operator,
+              ...term.modifiers.reduce((prev, current) => {
+                const keep = current.match(/k(l|h)?(\d+)?/);
+                if (keep) {
+                  if (keep.length == 3) {
+                    prev['k'] = `${keep[1]}${keep[2]}`;
+                  } else if (keep.length == 2) {
+                    prev['k'] = `${keep[1]}1`;
+                  } else if (keep.length == 1) {
+                    if (prev === 'k') {
+                      prev['k'] = 'h1';
+                    }
                   }
                 }
-              }
-              return prev;
-            }, {});
+                return prev;
+              }, {}),
+            };
+
+            if (term.options?.crit && !operator['*']) {
+              operator['*'] = { [term.options.crit]: [] };
+            }
             if (term.faces === 100) {
+              if (term.options?.crit) {
+                operator['*'][term.options.crit].push(multIndex++);
+                operator['*'][term.options.crit].push(multIndex++);
+              }
               return convertD100toD10x(theme, result.result);
             }
             if (term.faces === 0 || (!operator.k && !result.active)) {
               return null;
             } else {
+              if (term.options?.crit) {
+                operator['*'][term.options.crit].push(multIndex++);
+              }
               return { type: `d${term.faces}`, value: result.result, theme };
             }
           });
         } else if (term.type === 'mod') {
+          if (term.options?.crit) {
+            operator['*'][term.options.crit].push(multIndex++);
+          }
           return term;
         } else {
           return null;

@@ -94,12 +94,14 @@ Hooks.once('init', async () => {
     config: false,
     restricted: true,
     onChange: async value => {
-      const room = JSON.parse(value);
-      if (room?.slug && room?.slug !== roomSlug) {
-        roomSlug = value.slug;
-        console.error('room changed');
-        await setUpDddiceSdk();
-        await syncUserNamesAndColors();
+      if (value) {
+        const room = JSON.parse(value);
+        if (room?.slug && room?.slug !== roomSlug) {
+          roomSlug = value.slug;
+          console.error('room changed');
+          await setUpDddiceSdk();
+          await syncUserNamesAndColors();
+        }
       }
     },
   });
