@@ -1,6 +1,7 @@
 /** @format */
 
-import { IDiceRoll, IRoll, IRollValue } from 'dddice-js';
+import { IDiceRoll, IRoll, IRollValue, Operator, parseRollEquation } from 'dddice-js';
+
 import createLogger from '../module/log';
 
 const log = createLogger('module');
@@ -15,31 +16,6 @@ function convertD100toD10x(theme, value) {
     },
     { theme, type: 'd10', value: ((value - 1) % 10) + 1 },
   ];
-}
-
-export function convertDiceSoNiceRollToDddiceRoll(
-  roll,
-  theme,
-): {
-  dice: IDiceRoll[];
-  operator: object;
-} {
-  let operator;
-  const dice = roll.dice.flatMap(term => {
-    return term.results.flatMap(result => {
-      if (term.modifiers.indexOf('kh1') !== -1) {
-        operator = { k: 'h1' };
-      } else if (term.modifiers.indexOf('kl1') !== -1) {
-        operator = { k: 'l1' };
-      }
-      if (term.faces === 100) {
-        return convertD100toD10x(theme, result.result);
-      } else {
-        return { type: `d${term.faces}`, value: result.result, theme };
-      }
-    });
-  });
-  return { operator, dice };
 }
 
 export function convertDddiceRollModelToFVTTRollModel(dddiceRolls: IRoll): Roll {
@@ -150,7 +126,7 @@ export function convertFVTTRollModelToDddiceRollModel(
   theme: string,
 ): {
   dice: IDiceRoll[];
-  operator: object;
+  operator: Operator;
 } {
   let operator;
   const flattenedRollEquation: any = [];
@@ -265,4 +241,42 @@ export function convertFVTTRollModelToDddiceRollModel(
       .filter(i => i),
     operator,
   };
+}
+
+export function convertFVTTDiceEquation(
+  roll: Roll[],
+  theme: string,
+): {
+  dice: IDiceRoll[];
+  operator: Operator;
+  label?: string;
+} {
+  const values = [];
+  roll.dice.forEach(die =>
+    // because ready set roll sends dice with
+    // 0 for faces to represent modifiers we need
+    // to check if faces is truthy
+    die.faces &&
+    die.results.forEach(result => values.push(result.result)));
+
+  // need to use _formula even though its private
+  // because for round(), ceil() and floor()
+  // the public formula returns the wrong formula
+  const equation = roll._formula.toLowerCase()
+    // remove spaces
+    .replace(/\s+/g, '')
+    // +- -> -
+    .replace(/\+-/g, '-')
+    // remove roll text labels
+    .replace(/\[.*?]/g, '')
+    // replace empty parens () with (0)
+    .replace(/\(\)/g, '(0)')
+    // remove unsupported operators
+    .replace(/(r|rr|x|ro)(\d+)?/g, '')
+    // replace comparators as we don't understand those
+    .replace(/[><=]=?\d+/g, '')
+    // add implied 1 for kh dh kl & dl
+    .replace(/([kd][hl])(\D)/g, '$11$2');
+  log.debug('equation', equation);
+  return parseRollEquation(equation, theme, values);
 }

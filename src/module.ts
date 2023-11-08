@@ -12,7 +12,7 @@ import {
 } from 'dddice-js';
 import createLogger from './module/log';
 import {
-  convertDddiceRollModelToFVTTRollModel,
+  convertDddiceRollModelToFVTTRollModel, convertFVTTDiceEquation,
   convertFVTTRollModelToDddiceRollModel,
 } from './module/rollFormatConverters';
 import SdkBridge from './module/SdkBridge';
@@ -30,6 +30,7 @@ let roomSlug;
 const showForRoll = (...args) => {
   const room = getCurrentRoom();
   const theme = getCurrentTheme();
+
   const dddiceRoll = convertFVTTRollModelToDddiceRollModel([args[0]], theme?.id as string);
   const uuid = 'dsnFreeRoll:' + uuidv4();
   if (room && theme && dddiceRoll) {
@@ -214,51 +215,55 @@ Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
     if (!chatMessage.flags?.dddice?.rollId) {
       const room = getCurrentRoom();
       const theme = getCurrentTheme();
-      const dddiceRoll = convertFVTTRollModelToDddiceRollModel(rolls, theme?.id);
-      log.debug('formatted dddice roll', dddiceRoll);
-      if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
-        try {
-          let participantIds;
-          const whisper: IUser[] = chatMessage.whisper.map(
-            user =>
-              (game as Game).users
-                .find((u: User) => u.id === user)
-                ?.getFlag('dddice', 'user') as IUser,
-          );
-          log.debug('whisper', whisper);
-          if (whisper?.length > 0 && room?.participants) {
-            if (
-              chatMessage.isContentVisible &&
-              !whisper.some(u => u.uuid === game.user.getFlag('dddice', 'user').uuid)
-            ) {
-              whisper.push(game.user.getFlag('dddice', 'user'));
+      for (const roll of rolls) {
+        const dddiceRoll = convertFVTTDiceEquation(roll, theme?.id);
+        //const dddiceRoll = convertFVTTDiceEquation(equation, rolls, theme?.id);
+        log.debug('formatted dddice roll', dddiceRoll);
+        if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
+          try {
+            let participantIds;
+            const whisper: IUser[] = chatMessage.whisper.map(
+              user =>
+                (game as Game).users
+                  .find((u: User) => u.id === user)
+                  ?.getFlag('dddice', 'user') as IUser,
+            );
+            log.debug('whisper', whisper);
+            if (whisper?.length > 0 && room?.participants) {
+              if (
+                chatMessage.isContentVisible &&
+                !whisper.some(u => u.uuid === game.user.getFlag('dddice', 'user').uuid)
+              ) {
+                whisper.push(game.user.getFlag('dddice', 'user'));
+              }
+              participantIds = whisper
+                .map(
+                  (user: IUser) =>
+                    room.participants.find(
+                      ({ user: { uuid: participantUuid } }) => participantUuid === user?.uuid,
+                    )?.id,
+                )
+                .filter(i => i);
             }
-            participantIds = whisper
-              .map(
-                (user: IUser) =>
-                  room.participants.find(
-                    ({ user: { uuid: participantUuid } }) => participantUuid === user?.uuid,
-                  )?.id,
-              )
-              .filter(i => i);
+
+            const dddiceRollResponse: IRoll = (
+              await (window as any).api.roll.create(dddiceRoll.dice, {
+                room: room?.slug,
+                operator: dddiceRoll.operator,
+                external_id: 'foundryVTT:' + chatMessage.uuid,
+                whisper: participantIds,
+                label: roll.options?.flavor
+              })
+            ).data;
+
+            await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
+          } catch (e) {
+            console.error(e);
+            ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
+            $(`[data-message-id=${chatMessage.id}]`).removeClass('!dddice-hidden');
+            window.ui.chat.scrollBottom({ popout: true });
+            chatMessage._dddice_hide = false;
           }
-
-          const dddiceRollResponse: IRoll = (
-            await (window as any).api.roll.create(dddiceRoll.dice, {
-              room: room?.slug,
-              operator: dddiceRoll.operator,
-              external_id: 'foundryVTT:' + chatMessage.uuid,
-              whisper: participantIds,
-            })
-          ).data;
-
-          await chatMessage.setFlag('dddice', 'rollId', dddiceRollResponse.uuid);
-        } catch (e) {
-          console.error(e);
-          ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
-          $(`[data-message-id=${chatMessage.id}]`).removeClass('!dddice-hidden');
-          window.ui.chat.scrollBottom({ popout: true });
-          chatMessage._dddice_hide = false;
         }
       }
     }

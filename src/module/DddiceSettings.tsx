@@ -1,29 +1,22 @@
-/** @format */
 
+import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import ReactTooltip from 'react-tooltip';
-import { IRoom, ITheme, ThreeDDiceAPI } from 'dddice-js';
-
-import Back from './assets/interface-essential-left-arrow.svg';
-import Loading from './assets/loading.svg';
-import LogOut from './assets/interface-essential-exit-door-log-out-1.svg';
-import Help from './assets/support-help-question-question-square.svg';
 import imageLogo from 'url:./assets/dddice-48x48.png';
 
-import ApiKeyEntry from './components/ApiKeyEntry';
-import RoomSelection from './components/RoomSelection';
-
-import Room from './components/Room';
-import ThemeSelection from './components/ThemeSelection';
-import Theme from './components/Theme';
-
-import createLogger from './log';
-import StorageProvider from './StorageProvider';
-import SdkBridge from './SdkBridge';
 import PermissionProvider from './PermissionProvider';
+import SdkBridge from './SdkBridge';
+import StorageProvider from './StorageProvider';
+import LogOut from './assets/interface-essential-exit-door-log-out-1.svg';
+import Back from './assets/interface-essential-left-arrow.svg';
+import Loading from './assets/loading.svg';
+import Help from './assets/support-help-question-question-square.svg';
+import ApiKeyEntry from './components/ApiKeyEntry';
+import Room from './components/Room';
+import RoomSelection from './components/RoomSelection';
+import Theme from './components/Theme';
+import ThemeSelection from './components/ThemeSelection';
 import Toggle from './components/Toggle';
-
-const log = createLogger('App');
 
 export interface IStorage {
   apiKey?: string;
@@ -220,37 +213,40 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
     return sdkBridge.preloadTheme(theme);
   };
 
-  const onJoinRoom = useCallback(async (roomSlug: string, passcode?: string) => {
-    if (roomSlug) {
-      setLoadingMessage('Joining room');
-      pushLoading();
-      await createGuestAccountIfNeeded();
-      const room = state.rooms && state.rooms.find(r => r.slug === roomSlug);
-      if (room) {
-        onChangeRoom(room);
-      } else {
-        let newRoom;
-        try {
-          newRoom = (await api.current.room.join(roomSlug, passcode)).data;
-        } catch (error) {
-          setError('could not join room');
-          clearLoading();
-          throw error;
+  const onJoinRoom = useCallback(
+    async (roomSlug: string, passcode?: string) => {
+      if (roomSlug) {
+        setLoadingMessage('Joining room');
+        pushLoading();
+        await createGuestAccountIfNeeded();
+        const room = state.rooms && state.rooms.find(r => r.slug === roomSlug);
+        if (room) {
+          onChangeRoom(room);
+        } else {
+          let newRoom;
+          try {
+            newRoom = (await api.current.room.join(roomSlug, passcode)).data;
+          } catch (error) {
+            setError('could not join room');
+            clearLoading();
+            throw error;
+          }
+          if (newRoom) {
+            await storageProvider.setStorage({
+              rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom],
+            });
+            setState((storage: IStorage) => ({
+              ...storage,
+              rooms: storage.rooms ? [...storage.rooms, newRoom] : [newRoom],
+            }));
+            await onChangeRoom(newRoom);
+          }
         }
-        if (newRoom) {
-          await storageProvider.setStorage({
-            rooms: state.rooms ? [...state.rooms, newRoom] : [newRoom],
-          });
-          setState((storage: IStorage) => ({
-            ...storage,
-            rooms: storage.rooms ? [...storage.rooms, newRoom] : [newRoom],
-          }));
-          await onChangeRoom(newRoom);
-        }
+        popLoading();
       }
-      popLoading();
-    }
-  }, []);
+    },
+    [state],
+  );
 
   const onChangeRoom = useCallback(
     async (room: IRoom) => {
@@ -368,7 +364,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
         throw error;
       }
     }
-  }, []);
+  }, [state]);
 
   /**
    * Render
@@ -390,7 +386,7 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
               <a
                 className="!text-gray-700 text-xs mr-auto"
                 href="https://docs.dddice.com/guides/foundry-vtt-module.html"
-                target="_blank"
+                target="_blank" rel="noreferrer"
               >
                 <Help className="flex h-4 w-4 m-auto" data-tip="Help" data-place="right" />
               </a>
