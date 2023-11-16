@@ -463,11 +463,19 @@ async function setUpDddiceSdk() {
         );
       }
 
-      if ((game as Game).user?.isGM) {
-        (window as any).dddice.api.listen(ThreeDDiceRoomEvent.RoomUpdated, async room => {
+      window.dddice.api.listen(ThreeDDiceRoomEvent.RoomUpdated, async (room: IRoom) => {
+        // if you are the gm update the shared room object stored in the world settings
+        // that only gms have access too
+        if (game.user?.isGM) {
           await game.settings.set('dddice', 'room', JSON.stringify(room));
-        });
-      }
+        }
+
+        // everyone updates their room list cache
+        const updatedRoomCache = (await game.settings.get('dddice', 'rooms')).map(r =>
+          r.slug === room.slug ? room : r,
+        );
+        game.settings.set('dddice', 'rooms', updatedRoomCache);
+      });
 
       ui.notifications?.info('dddice is ready to roll!');
     } catch (e) {

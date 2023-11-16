@@ -1,6 +1,4 @@
 /** @format */
-import { setUpDddiceSdk, syncUserNamesAndColors } from '../module';
-
 export default class StorageProvider {
   async getStorage(key: string): Promise<any> {
     return new Promise(resolve => {
@@ -31,7 +29,7 @@ export default class StorageProvider {
     });
   }
 
-  async setStorage(payload: object): Promise<any> {
+  async setStorage(payload: Record<string, unknown>): Promise<any> {
     return Promise.all(
       Object.entries(payload).map(([key, value]) => {
         if (key === 'theme' || key === 'room') {
