@@ -1,5 +1,4 @@
 /** @format */
-import { ConfigPanel } from './module/ConfigPanel';
 import {
   IRoll,
   IRoom,
@@ -10,22 +9,30 @@ import {
   ThreeDDiceRollEvent,
   ThreeDDiceRoomEvent,
 } from 'dddice-js';
+import { v4 as uuidv4 } from 'uuid';
+
+import { ConfigPanel } from './module/ConfigPanel';
+import SdkBridge from './module/SdkBridge';
 import createLogger from './module/log';
 import {
-  convertDddiceRollModelToFVTTRollModel, convertFVTTDiceEquation,
+  convertDddiceRollModelToFVTTRollModel,
+  convertFVTTDiceEquation,
   convertFVTTRollModelToDddiceRollModel,
 } from './module/rollFormatConverters';
-import SdkBridge from './module/SdkBridge';
-import { v4 as uuidv4 } from 'uuid';
 
 const log = createLogger('module');
 const pendingRollsFromShowForRoll = new Map<string, () => void>();
 
-require('dddice-js');
-
 // to store last room slug, to de-dupe room changes
 // by comparing room slugs and not whole objects (like foundry does automatically)
 let roomSlug;
+
+declare global {
+  interface Window {
+    dddice: ThreeDDice;
+    api: ThreeDDiceAPI;
+  }
+}
 
 const showForRoll = (...args) => {
   const room = getCurrentRoom();
@@ -34,7 +41,7 @@ const showForRoll = (...args) => {
   const dddiceRoll = convertFVTTRollModelToDddiceRollModel([args[0]], theme?.id as string);
   const uuid = 'dsnFreeRoll:' + uuidv4();
   if (room && theme && dddiceRoll) {
-    (window as any).api.roll.create(dddiceRoll.dice, {
+    window.api.roll.create(dddiceRoll.dice, {
       room: room.slug,
       operator: dddiceRoll.operator,
       external_id: uuid,
@@ -48,95 +55,96 @@ const showForRoll = (...args) => {
 };
 
 Hooks.once('init', async () => {
-  (window as any).dddice = new (window as any).ThreeDDice();
+  window.dddice = new ThreeDDice();
 
   // register static settings
-  game.settings.registerMenu('dddice', 'connect', {
-    name: 'Settings',
-    label: 'Configure dddice',
-    hint: 'Configure dddice settings',
-    icon: 'fa-solid fa-dice-d20',
-    type: ConfigPanel,
-    restricted: false,
-  });
+  if (game instanceof Game) {
+    game.settings.registerMenu('dddice', 'connect', {
+      name: 'Settings',
+      label: 'Configure dddice',
+      hint: 'Configure dddice settings',
+      icon: 'fa-solid fa-dice-d20',
+      type: ConfigPanel,
+      restricted: false,
+    });
 
-  game.settings.register('dddice', 'render mode', {
-    name: 'Render Mode',
-    hint: 'If render mode is set to "off" then dice rolls will not be rendered but dice will still be sent to your dddice room via the API',
-    scope: 'client',
-    default: 'on',
-    type: String,
-    choices: {
-      on: 'on',
-      off: 'off',
-    },
-    config: false,
-    onChange: value => {
-      log.debug('change render mode', value);
-      setUpDddiceSdk();
-    },
-  });
+    game.settings.register('dddice', 'render mode', {
+      name: 'Render Mode',
+      hint: 'If render mode is set to "off" then dice rolls will not be rendered but dice will still be sent to your dddice room via the API',
+      scope: 'client',
+      default: 'on',
+      type: String,
+      choices: {
+        on: 'on',
+        off: 'off',
+      },
+      config: false,
+      onChange: value => {
+        log.debug('change render mode', value);
+        setUpDddiceSdk();
+      },
+    });
 
-  game.settings.register('dddice', 'apiKey', {
-    name: 'Api Key',
-    hint: 'Link to your dddice account with your api key. Generate one at https://dddice.com/account/developer',
-    scope: 'client',
-    default: '',
-    type: String,
-    config: false,
-  });
+    game.settings.register('dddice', 'apiKey', {
+      name: 'Api Key',
+      hint: 'Link to your dddice account with your api key. Generate one at https://dddice.com/account/developer',
+      scope: 'client',
+      default: '',
+      type: String,
+      config: false,
+    });
 
-  game.settings.register('dddice', 'room', {
-    name: 'Room',
-    hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
-    scope: 'world',
-    type: String,
-    default: '',
-    config: false,
-    restricted: true,
-    onChange: async value => {
-      if (value) {
-        const room = JSON.parse(value);
-        if (room?.slug && room?.slug !== roomSlug) {
-          roomSlug = value.slug;
-          console.error('room changed');
-          await setUpDddiceSdk();
-          await syncUserNamesAndColors();
+    game.settings.register('dddice', 'room', {
+      name: 'Room',
+      hint: 'Choose a dice room, that you have already joined via dddice.com, to roll in',
+      scope: 'world',
+      type: String,
+      default: '',
+      config: false,
+      restricted: true,
+      onChange: async value => {
+        if (value) {
+          const room = JSON.parse(value);
+          if (room?.slug && room?.slug !== roomSlug) {
+            roomSlug = value.slug;
+            await setUpDddiceSdk();
+            await syncUserNamesAndColors();
+          }
         }
-      }
-    },
-  });
+      },
+    });
 
-  game.settings.register('dddice', 'theme', {
-    name: 'Dice Theme',
-    hint: 'Choose a dice theme from your dice box',
-    scope: 'client',
-    type: String,
-    default: '',
-    config: false,
-  });
+    game.settings.register('dddice', 'theme', {
+      name: 'Dice Theme',
+      hint: 'Choose a dice theme from your dice box',
+      scope: 'client',
+      type: String,
+      default: '',
+      config: false,
+    });
 
-  game.settings.register('dddice', 'rooms', {
-    name: 'Rooms',
-    hint: 'Cached Room Data',
-    scope: 'client',
-    type: Array,
-    default: [],
-    config: false,
-  });
+    game.settings.register('dddice', 'rooms', {
+      name: 'Rooms',
+      hint: 'Cached Room Data',
+      scope: 'client',
+      type: Array,
+      default: [],
+      config: false,
+    });
 
-  game.settings.register('dddice', 'themes', {
-    name: 'Dice Themes',
-    hint: 'Cached Theme Data',
-    scope: 'client',
-    type: Array,
-    default: [],
-    config: false,
-  });
+    game.settings.register('dddice', 'themes', {
+      name: 'Dice Themes',
+      hint: 'Cached Theme Data',
+      scope: 'client',
+      type: Array,
+      default: [],
+      config: false,
+    });
+  }
 
   document.body.addEventListener('click', () => {
-    if (!(window as any).dddice.isDiceThrowing) {
-      (window as any).dddice.clear();
+    if (!window.dddice.isDiceThrowing) {
+      window.dddice.clear();
     }
   });
 });
@@ -152,7 +160,7 @@ async function syncUserNamesAndColors() {
     );
     log.debug('syncUserNamesAndColors', userParticipant);
     if (userParticipant) {
-      await (window as any).api.room.updateParticipant(room.slug, userParticipant.id, {
+      await window.api.room.updateParticipant(room.slug, userParticipant.id, {
         username: (game as Game).user?.name as string,
         color: `${(game as Game).user?.border as string}`,
       });
@@ -247,12 +255,12 @@ Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
             }
 
             const dddiceRollResponse: IRoll = (
-              await (window as any).api.roll.create(dddiceRoll.dice, {
+              await window.api.roll.create(dddiceRoll.dice, {
                 room: room?.slug,
                 operator: dddiceRoll.operator,
                 external_id: 'foundryVTT:' + chatMessage.uuid,
                 whisper: participantIds,
-                label: roll.options?.flavor
+                label: roll.options?.flavor,
               })
             ).data;
 
@@ -315,7 +323,7 @@ async function createGuestUserIfNeeded() {
     didSetup = true;
     justCreatedAnAccount = true;
   }
-  (window as any).api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
+  window.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
 
   const theme = game.settings.get('dddice', 'theme');
   if (theme) {
@@ -326,12 +334,12 @@ async function createGuestUserIfNeeded() {
       await game.settings.set(
         'dddice',
         'theme',
-        JSON.stringify((await (window as any).api.theme.get(theme)).data),
+        JSON.stringify((await window.api.theme.get(theme)).data),
       );
     }
   } else {
     log.info('pick random theme');
-    const themes = (await (window as any).api.diceBox.list()).data.filter(theme =>
+    const themes = (await window.api.diceBox.list()).data.filter(theme =>
       Object.values(
         theme.available_dice
           .map(die => die.type ?? die)
@@ -356,17 +364,17 @@ async function createGuestUserIfNeeded() {
     const oldRoom = window.localStorage.getItem('dddice.room');
     if (oldRoom) {
       log.info('migrating room');
-      const room = (await (window as any).api.room.get(oldRoom)).data;
+      const room = (await window.api.room.get(oldRoom)).data;
       await game.settings.set('dddice', 'room', JSON.stringify(room));
       window.localStorage.removeItem('dddice.room');
     } else {
       log.info('getting room 0');
-      let room = (await (window as any).api.room.list()).data;
+      let room = (await window.api.room.list()).data;
       if (room && room[0]) {
         await game.settings.set('dddice', 'room', JSON.stringify(room[0]));
       } else {
         log.info('creating room');
-        room = (await (window as any).api.room.create()).data;
+        room = (await window.api.room.create()).data;
         await game.settings.set('dddice', 'room', JSON.stringify(room));
       }
     }
@@ -375,7 +383,7 @@ async function createGuestUserIfNeeded() {
     let room = getCurrentRoom();
     if (room?.slug) {
       try {
-        room = (await (window as any).api.room.join(room.slug)).data;
+        room = (await window.api.room.join(room.slug)).data;
         if (game.user?.isGM) {
           await game.settings.set('dddice', 'room', JSON.stringify(room));
         }
@@ -390,29 +398,28 @@ async function createGuestUserIfNeeded() {
 
 async function setUpDddiceSdk() {
   log.info('setting up dddice sdk');
-  const [shouldSendWelcomeMessage, shouldStopSetup] = await createGuestUserIfNeeded();
+  const [_, shouldStopSetup] = await createGuestUserIfNeeded();
   const apiKey = game.settings.get('dddice', 'apiKey') as string;
   const room = getCurrentRoom()?.slug;
   roomSlug = room;
   if (apiKey && room && !shouldStopSetup) {
     try {
-      (window as any).api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
-      const user: IUser = (await (window as any).api.user.get()).data;
+      window.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
+      const user: IUser = (await window.api.user.get()).data;
       game.user?.setFlag('dddice', 'user', user);
 
       let canvas: HTMLCanvasElement = document.getElementById('dddice-canvas') as HTMLCanvasElement;
 
-      if ((window as any).dddice) {
+      if (window.dddice) {
         // clear the board
         if (canvas) {
           canvas.remove();
           canvas = undefined;
         }
         // disconnect from echo
-        if ((window as any).dddice.api?.connection)
-          (window as any).dddice.api.connection.disconnect();
+        if (window.dddice.api?.connection) window.dddice.api.connection.disconnect();
         // stop the animation loop
-        (window as any).dddice.stop();
+        window.dddice.stop();
       }
 
       if (game.settings.get('dddice', 'render mode') === 'on') {
@@ -434,33 +441,24 @@ async function setUpDddiceSdk() {
           window.addEventListener(
             'resize',
             () =>
-              (window as any).dddice &&
-              (window as any).dddice.renderer &&
-              (window as any).dddice.resize(window.innerWidth, window.innerHeight),
+              window.dddice &&
+              window.dddice.renderer &&
+              window.dddice.resize(window.innerWidth, window.innerHeight),
           );
         }
-        (window as any).dddice = new ThreeDDice().initialize(
-          canvas,
-          apiKey,
-          undefined,
-          'Foundry VTT',
-        );
-        (window as any).dddice.start();
-        (window as any).dddice.connect(room, undefined, user.uuid);
-        (window as any).dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
-          rollCreated(roll),
-        );
-        (window as any).dddice.off(ThreeDDiceRollEvent.RollFinished);
-        (window as any).dddice.on(ThreeDDiceRollEvent.RollFinished, (roll: IRoll) =>
-          rollFinished(roll),
-        );
+        window.dddice = new ThreeDDice().initialize(canvas, apiKey, undefined, 'Foundry VTT');
+        window.dddice.start();
+        window.dddice.connect(room, undefined, user.uuid);
+        window.dddice.on(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) => rollCreated(roll));
+        window.dddice.off(ThreeDDiceRollEvent.RollFinished);
+        window.dddice.on(ThreeDDiceRollEvent.RollFinished, (roll: IRoll) => rollFinished(roll));
         new SdkBridge().preloadTheme(getCurrentTheme());
       } else {
         log.info('render mode is off');
-        (window as any).dddice = new ThreeDDice();
-        (window as any).dddice.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
-        (window as any).dddice.api.connect(room, undefined, user.uuid);
-        (window as any).dddice.api.listen(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
+        window.dddice = new ThreeDDice();
+        window.dddice.api = new ThreeDDiceAPI(apiKey, 'Foundry VTT');
+        window.dddice.api.connect(room, undefined, user.uuid);
+        window.dddice.api.listen(ThreeDDiceRollEvent.RollCreated, (roll: IRoll) =>
           rollCreated(roll),
         );
       }

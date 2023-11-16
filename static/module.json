@@ -15,9 +15,9 @@
     }
   ],
   "conflicts": [],
-  "esmodules": ["module.js"],
+  "esmodules": ["dddice.js"],
   "scripts": [],
-  "styles": ["module.css"],
+  "styles": ["dddice.css"],
   "languages": [],
   "url": "This is auto replaced",
   "manifest": "https://github.com/dddice/dddice-foundry-plugin/releases/latest/download/module.json",
