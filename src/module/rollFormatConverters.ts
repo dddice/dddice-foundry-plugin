@@ -252,17 +252,19 @@ export function convertFVTTDiceEquation(
   label?: string;
 } {
   const values = [];
-  roll.dice.forEach(die =>
-    // because ready set roll sends dice with
-    // 0 for faces to represent modifiers we need
-    // to check if faces is truthy
-    die.faces &&
-    die.results.forEach(result => values.push(result.result)));
+  roll.dice.forEach(
+    die =>
+      // because ready set roll sends dice with
+      // 0 for faces to represent modifiers we need
+      // to check if faces is truthy
+      die.faces && die.results.forEach(result => values.push(result.result)),
+  );
 
   // need to use _formula even though its private
   // because for round(), ceil() and floor()
   // the public formula returns the wrong formula
-  const equation = roll._formula.toLowerCase()
+  const equation = roll._formula
+    .toLowerCase()
     // remove spaces
     .replace(/\s+/g, '')
     // +- -> -
@@ -272,7 +274,8 @@ export function convertFVTTDiceEquation(
     // replace empty parens () with (0)
     .replace(/\(\)/g, '(0)')
     // remove unsupported operators
-    .replace(/(r|rr|x|ro)(\d+)?/g, '')
+    .replace(/(r|rr|x|ro)(\d+|[+\- ])/g, '')
+    .replace(/(r|rr|x|ro)$/g, '')
     // replace comparators as we don't understand those
     .replace(/[><=]=?\d+/g, '')
     // add implied 1 for kh dh kl & dl

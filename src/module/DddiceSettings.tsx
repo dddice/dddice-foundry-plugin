@@ -209,10 +209,6 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
     await sdkBridge.reloadDiceEngine();
   };
 
-  const preloadTheme = async (theme: ITheme) => {
-    return sdkBridge.preloadTheme(theme);
-  };
-
   const onJoinRoom = useCallback(
     async (roomSlug: string, passcode?: string) => {
       if (roomSlug) {
@@ -309,7 +305,6 @@ const DddiceSettings = (props: DddiceSettingsProps) => {
 
     if (theme) {
       storageProvider.setStorage({ theme });
-      preloadTheme(theme);
     }
 
     ReactTooltip.hide();

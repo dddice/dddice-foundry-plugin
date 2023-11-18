@@ -16,7 +16,7 @@ export class ConfigPanel extends FormApplication {
 
   activateListeners(html: JQuery) {
     super.activateListeners(html);
-    const root = ReactDOM.createRoot(document.getElementById('dddice'));
+    const root = ReactDOM.createRoot(document.getElementById('dddice-config'));
     root.render(
       <DddiceSettings
         storageProvider={new StorageProvider()}
