@@ -2,8 +2,530 @@
 
 import { convertFVTTDiceEquation } from '../src/module/rollFormatConverters';
 
-describe('foundry vtt', () => {
-  it('rolls', () => {
-    expect(true).toBe(false);
+describe('/roll commands', () => {
+  it('/roll 1d20', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'Roll',
+        options: {},
+        dice: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 20,
+            modifiers: [],
+            results: [
+              {
+                result: 4,
+                active: true,
+              },
+            ],
+          },
+        ],
+        _formula: '1d20',
+        terms: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 20,
+            modifiers: [],
+            results: [
+              {
+                result: 4,
+                active: true,
+              },
+            ],
+          },
+        ],
+        total: 4,
+        evaluated: true,
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [{ type: 'd20', theme: 'test-theme', value: 4 }],
+      operator: {},
+    });
+  });
+
+  it('/roll floor(2d6/3)', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'DamageRoll',
+        options: {
+          critRule: 'double-damage',
+        },
+        _formula: '{floor(2d6/3)}',
+        dice: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 2,
+            faces: 6,
+            modifiers: [],
+            results: [
+              {
+                result: 2,
+                active: true,
+              },
+              {
+                result: 1,
+                active: true,
+              },
+            ],
+          },
+        ],
+        total: 1,
+        evaluated: true,
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [
+        { type: 'd6', theme: 'test-theme', value: 2 },
+        { type: 'd6', theme: 'test-theme', value: 1 },
+      ],
+      operator: { '/': '3', round: 'down' },
+    });
+  });
+});
+describe('pathfinder character sheet rolls', () => {
+  it('attacks with a rapier', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'DamageRoll',
+        options: {
+          critRule: 'double-damage',
+        },
+        _formula: '1d20 + 2',
+        dice: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 20,
+            modifiers: [],
+            results: [
+              {
+                result: 20,
+                active: true,
+              },
+            ],
+          },
+        ],
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [
+        { type: 'd20', theme: 'test-theme', value: 20 },
+        { type: 'mod', value: 2 },
+      ],
+      operator: {},
+    });
+  });
+
+  it('crit rapier dammage', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'DamageRoll',
+        options: {
+          rollerId: '7eb0HerNDdaTSEUh',
+          damage: {
+            name: 'Damage Roll: Rapier',
+            notes: [],
+            traits: ['attack'],
+            materials: [],
+            modifiers: [
+              {
+                slug: 'str',
+                label: 'Strength',
+                modifier: 2,
+                type: 'ability',
+                ability: 'str',
+                adjustments: [],
+                force: false,
+                enabled: true,
+                ignored: false,
+                source: null,
+                custom: false,
+                damageType: null,
+                damageCategory: null,
+                predicate: [],
+                critical: null,
+                traits: [],
+                notes: '',
+                hideIfDisabled: false,
+                kind: 'modifier',
+              },
+              {
+                slug: 'deadly-d8',
+                label: 'Deadly d8',
+                diceNumber: 1,
+                dieSize: 'd8',
+                critical: true,
+                category: null,
+                damageType: 'piercing',
+                override: null,
+                ignored: false,
+                enabled: true,
+                custom: false,
+                predicate: [],
+                selector: 'wRBZlwmZ3F3rYGft-damage',
+              },
+            ],
+            domains: [
+              'wRBZlwmZ3F3rYGft-damage',
+              'rapier-damage',
+              'strike-damage',
+              'damage',
+              'sword-weapon-group-damage',
+              'rapier-base-type-damage',
+              'str-damage',
+              'untrained-damage',
+            ],
+            damage: {
+              base: [
+                {
+                  diceNumber: 1,
+                  dieSize: 'd6',
+                  modifier: 0,
+                  damageType: 'piercing',
+                  category: null,
+                  materials: [],
+                },
+              ],
+              dice: [
+                {
+                  slug: 'deadly-d8',
+                  label: 'Deadly d8',
+                  diceNumber: 1,
+                  dieSize: 'd8',
+                  critical: true,
+                  category: null,
+                  damageType: 'piercing',
+                  override: null,
+                  ignored: false,
+                  enabled: true,
+                  custom: false,
+                  predicate: [],
+                  selector: 'wRBZlwmZ3F3rYGft-damage',
+                },
+              ],
+              modifiers: [
+                {
+                  slug: 'str',
+                  label: 'Strength',
+                  modifier: 2,
+                  type: 'ability',
+                  ability: 'str',
+                  adjustments: [],
+                  force: false,
+                  enabled: true,
+                  ignored: false,
+                  source: null,
+                  custom: false,
+                  damageType: null,
+                  damageCategory: null,
+                  predicate: [],
+                  critical: null,
+                  traits: [],
+                  notes: '',
+                  hideIfDisabled: false,
+                  kind: 'modifier',
+                },
+              ],
+              ignoredResistances: [],
+              formula: {
+                criticalFailure: null,
+                failure: '{1d6[piercing]}',
+                success: '{(1d6 + 2)[piercing]}',
+                criticalSuccess: '{(2 * (1d6 + 2) + 1d8)[piercing]}',
+              },
+              breakdown: {
+                criticalFailure: [],
+                failure: ['1d6 Piercing'],
+                success: ['1d6 Piercing', 'Strength +2'],
+                criticalSuccess: ['1d6 Piercing', 'Strength +2', 'Deadly d8 +1d8'],
+              },
+            },
+          },
+          degreeOfSuccess: 3,
+          ignoredResistances: [],
+          critRule: 'double-damage',
+        },
+        dice: [
+          {
+            class: 'Die',
+            options: {
+              crit: 2,
+            },
+            evaluated: true,
+            number: 1,
+            faces: 6,
+            modifiers: [],
+            results: [
+              {
+                result: 6,
+                active: true,
+              },
+            ],
+          },
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 8,
+            modifiers: [],
+            results: [
+              {
+                result: 5,
+                active: true,
+              },
+            ],
+          },
+        ],
+        _formula: '{(2 * (1d6 + 2) + 1d8)[piercing]}',
+        terms: [
+          {
+            class: 'InstancePool',
+            options: {},
+            evaluated: true,
+            terms: ['(2 * (1d6 + 2) + 1d8)[piercing]'],
+            modifiers: [],
+            rolls: [
+              {
+                class: 'DamageInstance',
+                options: {
+                  flavor: 'piercing',
+                  critRule: 'double-damage',
+                },
+                dice: [],
+                formula: '(2 * (1d6 + 2) + 1d8)[piercing]',
+                terms: [
+                  {
+                    class: 'Grouping',
+                    options: {
+                      flavor: 'piercing',
+                    },
+                    evaluated: true,
+                    term: {
+                      class: 'ArithmeticExpression',
+                      options: {},
+                      evaluated: true,
+                      operator: '+',
+                      operands: [
+                        {
+                          class: 'ArithmeticExpression',
+                          options: {},
+                          evaluated: true,
+                          operator: '*',
+                          operands: [
+                            {
+                              class: 'NumericTerm',
+                              options: {},
+                              evaluated: true,
+                              number: 2,
+                            },
+                            {
+                              class: 'Grouping',
+                              options: {
+                                crit: 2,
+                              },
+                              evaluated: true,
+                              term: {
+                                class: 'ArithmeticExpression',
+                                options: {
+                                  crit: 2,
+                                },
+                                evaluated: true,
+                                operator: '+',
+                                operands: [
+                                  {
+                                    class: 'Die',
+                                    options: {
+                                      crit: 2,
+                                    },
+                                    evaluated: true,
+                                    number: 1,
+                                    faces: 6,
+                                    modifiers: [],
+                                    results: [
+                                      {
+                                        result: 6,
+                                        active: true,
+                                      },
+                                    ],
+                                  },
+                                  {
+                                    class: 'NumericTerm',
+                                    options: {
+                                      crit: 2,
+                                    },
+                                    evaluated: true,
+                                    number: 2,
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                        {
+                          class: 'Die',
+                          options: {},
+                          evaluated: true,
+                          number: 1,
+                          faces: 8,
+                          modifiers: [],
+                          results: [
+                            {
+                              result: 5,
+                              active: true,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+                total: 21,
+                evaluated: true,
+              },
+            ],
+            results: [
+              {
+                result: 21,
+                active: true,
+              },
+            ],
+          },
+        ],
+        total: 21,
+        evaluated: true,
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [
+        { type: 'd6', theme: 'test-theme', value: 6 },
+        { type: 'mod', value: 2 },
+        { type: 'd8', theme: 'test-theme', value: 5 },
+      ],
+      operator: { '*': { 2: [0, 1] } },
+    });
+  });
+
+  describe('D&D 5e character sheet rolls', () => {
+    it('Halfling rolls athletics', () => {
+      const actual = convertFVTTDiceEquation(
+        {
+          class: 'D20Roll',
+          options: {
+            flavor: 'Athletics Skill Check',
+            advantageMode: 0,
+            defaultRollMode: 'publicroll',
+            rollMode: 'publicroll',
+            critical: 20,
+            fumble: 1,
+            halflingLucky: true,
+            configured: true,
+          },
+          dice: [
+            {
+              class: 'Die',
+              options: {
+                critical: 20,
+                fumble: 1,
+              },
+              evaluated: true,
+              number: 1,
+              faces: 20,
+              modifiers: ['r1=1'],
+              results: [
+                {
+                  result: 5,
+                  active: true,
+                },
+              ],
+            },
+          ],
+          _formula: '1d20r1=1 + 2 + 0 + 2',
+          terms: [
+            {
+              class: 'Die',
+              options: {
+                critical: 20,
+                fumble: 1,
+              },
+              evaluated: true,
+              number: 1,
+              faces: 20,
+              modifiers: ['r1=1'],
+              results: [
+                {
+                  result: 5,
+                  active: true,
+                },
+              ],
+            },
+            {
+              class: 'OperatorTerm',
+              options: {},
+              evaluated: true,
+              operator: '+',
+            },
+            {
+              class: 'NumericTerm',
+              options: {},
+              evaluated: true,
+              number: 2,
+            },
+            {
+              class: 'OperatorTerm',
+              options: {},
+              evaluated: true,
+              operator: '+',
+            },
+            {
+              class: 'NumericTerm',
+              options: {},
+              evaluated: true,
+              number: 0,
+            },
+            {
+              class: 'OperatorTerm',
+              options: {},
+              evaluated: true,
+              operator: '+',
+            },
+            {
+              class: 'NumericTerm',
+              options: {},
+              evaluated: true,
+              number: 2,
+            },
+          ],
+          total: 9,
+          evaluated: true,
+        },
+        'test-theme',
+      );
+      expect(actual).toEqual({
+        dice: [
+          { type: 'd20', theme: 'test-theme', value: 5 },
+          { type: 'mod', value: 2 },
+          { type: 'mod', value: 0 },
+          { type: 'mod', value: 2 },
+        ],
+        operator: {},
+      });
+    });
   });
 });
