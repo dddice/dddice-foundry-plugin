@@ -257,7 +257,10 @@ export function convertFVTTDiceEquation(
       // because ready set roll sends dice with
       // 0 for faces to represent modifiers we need
       // to check if faces is truthy
-      die.faces && die.results.forEach(result => values.push(result.result)),
+      die.faces &&
+      die.results.forEach(
+        result => !result.rerolled && !result.explode && values.push(result.result),
+      ),
   );
 
   // need to use _formula even though its private
@@ -274,12 +277,11 @@ export function convertFVTTDiceEquation(
     // replace empty parens () with (0)
     .replace(/\(\)/g, '(0)')
     // remove unsupported operators
-    .replace(/(r|rr|x|ro)(\d+|[+\- ])/g, '')
-    .replace(/(r|rr|x|ro)$/g, '')
+    .replace(/(r|rr|ro|x|xo)([+\-,}<>= ])/g, '$2')
+    .replace(/(r|rr|ro|x|xo)(\d+|$)/g, '')
     // replace comparators as we don't understand those
     .replace(/[><=]=?\d+/g, '')
     // add implied 1 for kh dh kl & dl
-    .replace(/([kd][hl])(\D)/g, '$11$2');
-  log.debug('equation', equation);
+    .replace(/([kd][hl])(\D|$)/g, '$11$2');
   return parseRollEquation(equation, theme, values);
 }

@@ -1,5 +1,7 @@
 /** @format */
 
+import { describe, expect, it } from '@jest/globals';
+
 import { convertFVTTDiceEquation } from '../src/module/rollFormatConverters';
 
 describe('/roll commands', () => {
@@ -131,7 +133,7 @@ describe('pathfinder character sheet rolls', () => {
     });
   });
 
-  it('crit rapier dammage', () => {
+  it('Critical rapier damage', () => {
     const actual = convertFVTTDiceEquation(
       {
         class: 'DamageRoll',
@@ -526,6 +528,141 @@ describe('pathfinder character sheet rolls', () => {
         ],
         operator: {},
       });
+    });
+  });
+});
+
+describe('re-rolls', () => {
+  it('2d6r<=2[slashing] + 5[Slashing] + 2[Slashing]', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        data: {},
+        options: {},
+        dice: [
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'slashing',
+            },
+            _evaluated: true,
+            number: 2,
+            faces: 6,
+            modifiers: ['r<=2'],
+            results: [
+              {
+                result: 3,
+                active: true,
+              },
+              {
+                result: 1,
+                active: false,
+                rerolled: true,
+              },
+              {
+                result: 5,
+                active: true,
+              },
+            ],
+          },
+          {
+            isIntermediate: false,
+            options: {},
+            _evaluated: true,
+            operator: '+',
+          },
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'Slashing',
+            },
+            _evaluated: true,
+            number: 5,
+          },
+          {
+            isIntermediate: false,
+            options: {},
+            _evaluated: true,
+            operator: '+',
+          },
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'Slashing',
+            },
+            _evaluated: true,
+            number: 2,
+          },
+        ],
+        terms: [
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'slashing',
+            },
+            _evaluated: true,
+            number: 2,
+            faces: 6,
+            modifiers: ['r<=2'],
+            results: [
+              {
+                result: 3,
+                active: true,
+              },
+              {
+                result: 1,
+                active: false,
+                rerolled: true,
+              },
+              {
+                result: 5,
+                active: true,
+              },
+            ],
+          },
+          {
+            isIntermediate: false,
+            options: {},
+            _evaluated: true,
+            operator: '+',
+          },
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'Slashing',
+            },
+            _evaluated: true,
+            number: 5,
+          },
+          {
+            isIntermediate: false,
+            options: {},
+            _evaluated: true,
+            operator: '+',
+          },
+          {
+            isIntermediate: false,
+            options: {
+              flavor: 'Slashing',
+            },
+            _evaluated: true,
+            number: 2,
+          },
+        ],
+        _dice: [],
+        _formula: '2d6r<=2[slashing] + 5[Slashing] + 2[Slashing]',
+        _evaluated: true,
+        _total: 15,
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [
+        { type: 'd6', theme: 'test-theme', value: 3 },
+        { type: 'd6', theme: 'test-theme', value: 5 },
+        { type: 'mod', value: 5 },
+        { type: 'mod', value: 2 },
+      ],
+      operator: {},
     });
   });
 });

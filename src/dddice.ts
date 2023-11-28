@@ -124,9 +124,13 @@ Hooks.once('init', async () => {
       default: '',
       config: false,
       onChange: value => {
-        const theme = JSON.parse(value) as ITheme;
-        dddice.loadTheme(theme, true);
-        dddice.loadThemeResources(theme.id, true);
+        if (value) {
+          const theme = JSON.parse(value) as ITheme;
+          if (dddice) {
+            dddice.loadTheme(theme, true);
+            dddice.loadThemeResources(theme.id, true);
+          }
+        }
       },
     });
 
@@ -167,10 +171,18 @@ async function syncUserNamesAndColors() {
     );
     log.debug('syncUserNamesAndColors', userParticipant);
     if (userParticipant) {
-      await api.room.updateParticipant(room.slug, userParticipant.id, {
-        username: (game as Game).user?.name as string,
-        color: `${(game as Game).user?.border as string}`,
-      });
+      try {
+        await api.room.updateParticipant(room.slug, userParticipant.id, {
+          username: (game as Game).user?.name as string,
+          color: `${(game as Game).user?.border as string}`,
+        });
+      } catch (e) {
+        // log the error and continue
+        // there seems to be a mystery 403 that could be
+        // a race condition that I have yet to figure out
+        // TODO: figure it out
+        console.error(e);
+      }
     }
   }
 }
