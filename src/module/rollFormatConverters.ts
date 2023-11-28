@@ -280,6 +280,8 @@ export function convertFVTTDiceEquation(
     .replace(/\[.*?]/g, '')
     // replace empty parens () with (0)
     .replace(/\(\)/g, '(0)')
+    // remove floating point modifiers
+    .replace(/[+-]\d+\.\d+/, '')
     // remove unsupported operators
     .replace(/(r|rr|ro|x|xo)([+\-,}<>= ])/g, '$2')
     .replace(/(r|rr|ro|x|xo)(\d+|$)/g, '')

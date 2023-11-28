@@ -96,6 +96,168 @@ describe('/roll commands', () => {
     });
   });
 });
+
+describe('dnd character sheet rolls', () => {
+  it('tie break initative', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'D20Roll',
+        options: {
+          flavor: 'Initiative',
+          halflingLucky: false,
+          critical: null,
+          fumble: null,
+          event: {
+            originalEvent: {
+              isTrusted: true,
+            },
+            type: 'click',
+            target: {
+              jQuery364088552297875112741: {
+                events: {
+                  click: [
+                    {
+                      type: 'click',
+                      origType: 'click',
+                      data: null,
+                      guid: 251,
+                      namespace: '',
+                    },
+                  ],
+                },
+              },
+            },
+            currentTarget: {
+              jQuery364088552297875112741: {
+                events: {
+                  click: [
+                    {
+                      type: 'click',
+                      origType: 'click',
+                      data: null,
+                      guid: 251,
+                      namespace: '',
+                    },
+                  ],
+                },
+              },
+            },
+            relatedTarget: null,
+            timeStamp: 3894472,
+            jQuery36408855229787511274: true,
+            delegateTarget: {
+              jQuery364088552297875112741: {
+                events: {
+                  click: [
+                    {
+                      type: 'click',
+                      origType: 'click',
+                      data: null,
+                      guid: 251,
+                      namespace: '',
+                    },
+                  ],
+                },
+              },
+            },
+            handleObj: {
+              type: 'click',
+              origType: 'click',
+              data: null,
+              guid: 251,
+              namespace: '',
+            },
+            data: null,
+            result: {},
+          },
+          configured: true,
+          advantageMode: 0,
+          rollMode: 'publicroll',
+        },
+        dice: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 20,
+            modifiers: [],
+            results: [
+              {
+                result: 10,
+                active: true,
+              },
+            ],
+          },
+        ],
+        _formula: '1d20 + 0 + 0 + 0.1',
+        terms: [
+          {
+            class: 'Die',
+            options: {},
+            evaluated: true,
+            number: 1,
+            faces: 20,
+            modifiers: [],
+            results: [
+              {
+                result: 10,
+                active: true,
+              },
+            ],
+          },
+          {
+            class: 'OperatorTerm',
+            options: {},
+            evaluated: true,
+            operator: '+',
+          },
+          {
+            class: 'NumericTerm',
+            options: {},
+            evaluated: true,
+            number: 0,
+          },
+          {
+            class: 'OperatorTerm',
+            options: {},
+            evaluated: true,
+            operator: '+',
+          },
+          {
+            class: 'NumericTerm',
+            options: {},
+            evaluated: true,
+            number: 0,
+          },
+          {
+            class: 'OperatorTerm',
+            options: {},
+            evaluated: true,
+            operator: '+',
+          },
+          {
+            class: 'NumericTerm',
+            options: {},
+            evaluated: true,
+            number: 0.1,
+          },
+        ],
+        total: 10.1,
+        evaluated: true,
+      },
+      'test-theme',
+    );
+    expect(actual).toEqual({
+      dice: [
+        { type: 'd20', theme: 'test-theme', value: 10 },
+        { type: 'mod', value: 0 },
+        { type: 'mod', value: 0 },
+      ],
+      operator: {},
+    });
+  });
+});
 describe('pathfinder character sheet rolls', () => {
   it('attacks with a rapier', () => {
     const actual = convertFVTTDiceEquation(
