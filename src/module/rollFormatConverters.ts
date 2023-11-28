@@ -251,6 +251,10 @@ export function convertFVTTDiceEquation(
   operator: Operator;
   label?: string;
 } {
+  if (/(x|xo)([+\-,}<>= ]|\d+|$)/.test(roll._formula)) {
+    throw new Error("dddice doesn't support exploding dice");
+  }
+
   const values = [];
   roll.dice.forEach(
     die =>
