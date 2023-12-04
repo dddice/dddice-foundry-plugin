@@ -828,3 +828,168 @@ describe('re-rolls', () => {
     });
   });
 });
+
+describe("Savage Word's Character sheets", () => {
+  it('rolls athletics', () => {
+    const actual = convertFVTTDiceEquation(
+      {
+        class: 'TraitRoll',
+        options: {
+          modifiers: [],
+          groupRoll: false,
+          rerollable: true,
+        },
+        dice: [
+          {
+            class: 'Die',
+            options: {
+              flavor: 'Athletics',
+            },
+            evaluated: true,
+            number: 1,
+            faces: 4,
+            modifiers: ['x'],
+            results: [
+              {
+                result: 4,
+                active: true,
+                exploded: true,
+              },
+              {
+                result: 4,
+                active: true,
+                exploded: true,
+              },
+              {
+                result: 4,
+                active: true,
+                exploded: true,
+              },
+              {
+                result: 3,
+                active: true,
+              },
+            ],
+          },
+          {
+            class: 'Die',
+            options: {
+              flavor: 'Wild Die',
+            },
+            evaluated: true,
+            number: 1,
+            faces: 6,
+            modifiers: ['x'],
+            results: [
+              {
+                result: 2,
+                active: true,
+              },
+            ],
+          },
+        ],
+        _formula: '{1d4x[Athletics],1d6x[Wild Die]}kh',
+        terms: [
+          {
+            class: 'PoolTerm',
+            options: {},
+            evaluated: true,
+            terms: ['1d4x[Athletics]', '1d6x[Wild Die]'],
+            modifiers: ['kh'],
+            rolls: [
+              {
+                class: 'Roll',
+                options: {},
+                dice: [],
+                formula: '1d4x[Athletics]',
+                terms: [
+                  {
+                    class: 'Die',
+                    options: {
+                      flavor: 'Athletics',
+                    },
+                    evaluated: true,
+                    number: 1,
+                    faces: 4,
+                    modifiers: ['x'],
+                    results: [
+                      {
+                        result: 4,
+                        active: true,
+                        exploded: true,
+                      },
+                      {
+                        result: 4,
+                        active: true,
+                        exploded: true,
+                      },
+                      {
+                        result: 4,
+                        active: true,
+                        exploded: true,
+                      },
+                      {
+                        result: 3,
+                        active: true,
+                      },
+                    ],
+                  },
+                ],
+                total: 15,
+                evaluated: true,
+              },
+              {
+                class: 'Roll',
+                options: {},
+                dice: [],
+                formula: '1d6x[Wild Die]',
+                terms: [
+                  {
+                    class: 'Die',
+                    options: {
+                      flavor: 'Wild Die',
+                    },
+                    evaluated: true,
+                    number: 1,
+                    faces: 6,
+                    modifiers: ['x'],
+                    results: [
+                      {
+                        result: 2,
+                        active: true,
+                      },
+                    ],
+                  },
+                ],
+                total: 2,
+                evaluated: true,
+              },
+            ],
+            results: [
+              {
+                result: 15,
+                active: true,
+              },
+              {
+                result: 2,
+                active: false,
+                discarded: true,
+              },
+            ],
+          },
+        ],
+        total: 15,
+        evaluated: true,
+      },
+      'test-theme',
+    );
+
+    expect(actual).toEqual({
+      dice: [
+        { theme: 'test-theme', type: 'd4', value: '15' },
+        { theme: 'test-theme', type: 'd6', value: '2' },
+      ],
+      operator: { k: 'h1' },
+    });
+  });
+});

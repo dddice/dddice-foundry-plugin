@@ -283,8 +283,8 @@ export function convertFVTTDiceEquation(
     // remove floating point modifiers
     .replace(/[+-]\d+\.\d+/, '')
     // remove unsupported operators
-    .replace(/(r|rr|ro|x|xo)([+\-,}<>= ])/g, '$2')
-    .replace(/(r|rr|ro|x|xo)(\d+|$)/g, '')
+    .replace(/(r|rr|ro|x|xo|cs|cf)([+\-,}<>= ])/g, '$2')
+    .replace(/(r|rr|ro|x|xo|cs|cf)(\d+|$)/g, '')
     // replace comparators as we don't understand those
     .replace(/[><=]=?\d+/g, '')
     // add implied 1 for kh dh kl & dl
