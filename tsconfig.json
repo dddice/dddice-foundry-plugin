@@ -21,7 +21,12 @@
     "strictNullChecks": false,
     "strictPropertyInitialization": true,
     "target": "es2018",
-    "types": ["@league-of-foundry-developers/foundry-vtt-types", "node", "@types/jest"]
+    "types": [
+      "@league-of-foundry-developers/foundry-vtt-types",
+      "node",
+      "@types/jest",
+      "@types/three"
+    ]
   },
   "exclude": ["node_modules", "webpack.config.js", "foundry.js", "dist"]
 }

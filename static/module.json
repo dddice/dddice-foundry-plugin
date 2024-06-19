@@ -6,8 +6,8 @@
   "version": "This is auto replaced",
   "library": "false",
   "compatibility": {
-    "verified": "11.313",
-    "minimum": "10.282"
+    "verified": "11.315",
+    "minimum": "11.0"
   },
   "authors": [
     {
