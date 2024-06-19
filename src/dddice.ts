@@ -94,6 +94,12 @@ Hooks.once('init', async () => {
       default: '',
       type: String,
       config: false,
+      onChange: async value => {
+        if (value) {
+          await setUpDddiceSdk();
+          await syncUserNamesAndColors();
+        }
+      },
     });
 
     game.settings.register('dddice', 'room', {
@@ -353,6 +359,7 @@ async function createGuestUserIfNeeded() {
     }
   } else {
     log.info('pick random theme');
+    didSetup = true;
     const themes = (await api.diceBox.list()).data.filter(theme =>
       Object.values(
         theme.available_dice
@@ -371,7 +378,6 @@ async function createGuestUserIfNeeded() {
       'theme',
       JSON.stringify(themes[Math.floor(Math.random() * themes.length)]),
     );
-    didSetup = true;
   }
 
   if ((!game.settings.get('dddice', 'room') || justCreatedAnAccount) && game.user?.isGM) {
