@@ -125,15 +125,8 @@ jobs:
           body: ${{ steps.release.outputs.RELEASE_BODY }}
           prerelease: ${{ inputs.prerelease }}
 
-
-      - name: Publish to Foundry Admin
-        if: github.event.inputs.prerelease != 'true'
-        run: npx @ghost-fvtt/foundry-publish
-        env:
-          FVTT_MANIFEST_PATH: ./dist/module.json
-          FVTT_MANIFEST_URL: https://github.com/${{github.repository}}/releases/download/${{steps.version.outputs.tag}}/module.json
-          FVTT_CHANGELOG_URL: https://github.com/${{github.repository}}/releases/tag/${{steps.version.outputs.tag}}
-          FVTT_PACKAGE_ID: ${{ secrets.FVTT_PACKAGE_ID }}
-          FVTT_USERNAME: ${{ secrets.FVTT_USERNAME }}
-          FVTT_PASSWORD: ${{ secrets.FVTT_PASSWORD }}
-          FVTT_DELETE_OBSOLETE_VERSIONS: false
+      - name: Publish FoundryVTT Package
+        uses: cs96and/FoundryVTT-release-package@v1.0.2
+        with:
+          package-token: ${{ secrets.PACKAGE_TOKEN }}
+          manifest-url: https://github.com/${{github.repository}}/releases/download/${{steps.version.outputs.tag}}/module.json
