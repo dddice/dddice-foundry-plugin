@@ -126,7 +126,7 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
 
       - name: Publish FoundryVTT Package
-        uses: cs96and/FoundryVTT-release-package@v1.0.2
+        uses: cs96and/FoundryVTT-release-package@v1
         with:
           package-token: ${{ secrets.PACKAGE_TOKEN }}
           manifest-url: https://github.com/${{github.repository}}/releases/download/${{steps.version.outputs.tag}}/module.json
