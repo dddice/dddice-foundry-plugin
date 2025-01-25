@@ -25,7 +25,9 @@ const pendingRollsFromShowForRoll = new Map<string, () => void>();
 // to store last room slug, to de-dupe room changes
 // by comparing room slugs and not whole objects (like foundry does automatically)
 let roomSlug;
-
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 declare global {
   interface Window {
     dddice: ThreeDDice;
@@ -234,18 +236,18 @@ Hooks.on('diceSoNiceRollStart', (messageId, rollData) => {
   }
 });
 
-Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
-  log.debug('calling Create Chat Message hook', chatMessage);
-  const rolls = chatMessage?.isRoll && chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
+const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
+  log.debug('is it a roll message?', chatMessage?.isRoll);
+  const rolls = chatMessage?.rolls?.length > 0 ? chatMessage.rolls : null;
+  log.debug('these are the rolls', chatMessage.rolls);
   if (rolls?.length > 0) {
     // remove the sound v10
     mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
 
-    if (game.settings.get('dddice', 'render mode') === 'on' && chatMessage.isContentVisible) {
-      chatMessage._dddice_hide = true;
-    }
-
     if (!chatMessage.flags?.dddice?.rollId) {
+      if (game.settings.get('dddice', 'render mode') === 'on' && chatMessage.isContentVisible) {
+        chatMessage._dddice_hide = true;
+      }
       const room = getCurrentRoom();
       const theme = getCurrentTheme();
       for (const roll of rolls) {
@@ -300,10 +302,16 @@ Hooks.on('createChatMessage', async (chatMessage: ChatMessage) => {
       }
     }
   }
+};
+
+Hooks.on('createChatMessage', async message => {
+  log.debug('calling Create Chat Message hook', message);
+  await rollDiceFromChatMessage(message);
 });
 
-Hooks.on('updateChatMessage', (message, updateData, options) => {
+Hooks.on('updateChatMessage', async (message, updateData, options) => {
   log.debug('calling Update Chat Message hook', message, updateData, options);
+  await rollDiceFromChatMessage(message);
 });
 
 // add css to hide roll messages about to be deleted to prevent flicker
