@@ -47,6 +47,11 @@ jobs:
           echo "new version: $VERSION"
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          TAGS=($(git tag --sort=version:refname | grep -vE '[-](alpha|beta|rc)'))
+          LATEST=${TAGS[-1]}
+          PREV=${TAGS[-2]}
+          echo "latest=${LATEST}" >> $GITHUB_OUTPUT
+          echo "prev=${PREV}" >> $GITHUB_OUTPUT
 
       - name: Update Version
         run: |
@@ -99,7 +104,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --current --strip all --topo-order
+          args: ${{steps.version.outputs.prev}}..${{steps.version.outputs.latest}}  --strip header
         env:
           OUTPUT: CHANGES.md
 
