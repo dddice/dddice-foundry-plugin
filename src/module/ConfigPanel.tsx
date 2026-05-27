@@ -27,14 +27,17 @@ export class ConfigPanel extends FormApplication {
   }
 
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
-      classes: ['form'],
-      popOut: true,
-      closeOnSubmit: false,
-      template: 'modules/dddice/templates/ConfigPanel.html',
-      id: 'dddice-config-panel',
-      title: 'dddice | configuration',
-    });
+    return {
+      ...super.defaultOptions,
+      ...{
+        classes: ['form'],
+        popOut: true,
+        closeOnSubmit: false,
+        template: 'modules/dddice/templates/ConfigPanel.html',
+        id: 'dddice-config-panel',
+        title: 'dddice | configuration',
+      },
+    };
   }
 
   protected _updateObject(event: Event, formData: object | undefined): Promise<unknown> {

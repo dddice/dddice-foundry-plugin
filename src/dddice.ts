@@ -242,10 +242,9 @@ const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
   log.debug('these are the rolls', chatMessage.rolls);
   if (rolls?.length > 0) {
     // remove the sound v10
-    mergeObject(chatMessage, { '-=sound': null }, { performDeletions: true });
 
     if (!chatMessage.flags?.dddice?.rollId) {
-      if (game.settings.get('dddice', 'render mode') === 'on' && chatMessage.isContentVisible) {
+      if (game.settings.get('dddice', 'render mode') === 'on') {
         chatMessage._dddice_hide = true;
       }
       const room = getCurrentRoom();
@@ -286,7 +285,7 @@ const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
                 operator: dddiceRoll.operator,
                 external_id: 'foundryVTT:' + chatMessage.uuid,
                 whisper: participantIds,
-                label: roll.options?.flavor,
+                label: roll.options?.flavor + roll.options?.title || undefined,
               })
             ).data;
 
@@ -295,7 +294,9 @@ const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
         } catch (e) {
           console.error(e);
           ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
-          $(`[data-message-id=${chatMessage.id}]`).removeClass('!dddice-hidden');
+          document
+            .querySelector(`[data-message-id='${chatMessage.id}']`)
+            ?.classList.remove('!dddice-hidden');
           window.ui.chat.scrollBottom({ popout: true });
           chatMessage._dddice_hide = false;
         }
@@ -315,9 +316,10 @@ Hooks.on('updateChatMessage', async (message, updateData, options) => {
 });
 
 // add css to hide roll messages about to be deleted to prevent flicker
-Hooks.on('renderChatMessage', (message, html, data) => {
+Hooks.on('renderChatMessageHTML', (message, html, data) => {
+  log.info('renderChatMessageHook', message);
   if (message._dddice_hide) {
-    html.addClass('!dddice-hidden');
+    html?.classList.add('!dddice-hidden');
   }
 });
 
@@ -632,7 +634,9 @@ const rollFinished = async (roll: IRoll) => {
   );
   if (chatMessages && chatMessages.length > 0) {
     chatMessages?.forEach(chatMessage => {
-      $(`[data-message-id=${chatMessage.id}]`).removeClass('!dddice-hidden');
+      document
+        .querySelector(`[data-message-id='${chatMessage.id}']`)
+        ?.classList.remove('!dddice-hidden');
       chatMessage._dddice_hide = false;
     });
     window.ui.chat.scrollBottom({ popout: true });

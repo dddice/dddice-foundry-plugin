@@ -286,8 +286,7 @@ export function convertFVTTDiceEquation(
     .replace(/(r|rr|ro|x|xo|cs|cf)([+\-,}<>= ])/g, '$2')
     .replace(/(r|rr|ro|x|xo|cs|cf)(\d+|$)/g, '')
     // replace comparators as we don't understand those
-    .replace(/[><=]=?\d+/g, '')
-    // add implied 1 for kh dh kl & dl
-    .replace(/([kd][hl])(\D|$)/g, '$11$2');
+    .replace(/[><=]=?\d+/g, '');
+  log.debug('equation to parse', equation);
   return parseRollEquation(equation, theme, values);
 }
