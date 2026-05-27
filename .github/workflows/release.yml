@@ -99,7 +99,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --current --strip all
+          args: --current --strip all --topo-order
         env:
           OUTPUT: CHANGES.md
 
