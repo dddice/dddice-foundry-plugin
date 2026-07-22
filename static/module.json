@@ -1,10 +1,9 @@
 {
   "id": "dddice",
-  "name": "dddice",
   "title": "dddice - 3D Dice Roller",
   "description": "Roll 3D digital dice using Foundry VTT.",
   "version": "This is auto replaced",
-  "library": "false",
+  "library": false,
   "compatibility": {
     "verified": "14.363",
     "minimum": "14.0"
@@ -14,7 +13,6 @@
       "name": "dddice"
     }
   ],
-  "conflicts": [],
   "esmodules": ["dddice.js"],
   "scripts": [],
   "styles": ["dddice.css"],
