@@ -40,6 +40,10 @@ const ThemeSelection = (props: IThemes) => {
           connect your account
         </DddiceButton>
       </div>
+      <div className="text-warning text-xs m-auto mt-2 text-center px-2">
+        Themes marked incomplete are missing standard dice (like d20) and will fail those rolls in
+        Foundry.
+      </div>
       {themes?.length > 0 && (
         <div className="overflow-y-auto scroll mt-2">
           {themes.map((theme: ITheme) => (

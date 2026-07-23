@@ -21,3 +21,4 @@ foundry.js
 dist
 /.parcel-cache/
 /data/
+tests/results/

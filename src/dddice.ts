@@ -12,6 +12,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 import { ConfigPanel } from './module/ConfigPanel';
+import {
+  formatMissingDieTypesError,
+  getMissingDieTypesForRoll,
+  isFullPolyhedralTheme,
+} from './module/helper/themeDice';
 import createLogger from './module/log';
 import {
   convertDddiceRollModelToFVTTRollModel,
@@ -38,6 +43,25 @@ declare global {
 let dddice: ThreeDDice;
 let api: ThreeDDiceAPI;
 
+const assertThemeSupportsRoll = (
+  theme: ITheme | undefined,
+  dice: { type?: string }[],
+  context?: string,
+) => {
+  const missingTypes = getMissingDieTypesForRoll(theme, dice);
+  if (missingTypes.length === 0) {
+    return;
+  }
+  log.warn('theme missing die types for roll', {
+    themeId: theme?.id,
+    themeName: theme?.name,
+    availableDice: theme?.available_dice,
+    missingTypes,
+    context,
+  });
+  throw new Error(formatMissingDieTypesError(theme, missingTypes));
+};
+
 const showForRoll = (...args) => {
   const room = getCurrentRoom();
   const theme = getCurrentTheme();
@@ -45,11 +69,17 @@ const showForRoll = (...args) => {
   const dddiceRoll = convertFVTTRollModelToDddiceRollModel([args[0]], theme?.id as string);
   const uuid = 'dsnFreeRoll:' + uuidv4();
   if (room && theme && dddiceRoll) {
-    api.roll.create(dddiceRoll.dice, {
-      room: room.slug,
-      operator: dddiceRoll.operator,
-      external_id: uuid,
-    });
+    try {
+      assertThemeSupportsRoll(theme, dddiceRoll.dice, args[0]?._formula);
+      api.roll.create(dddiceRoll.dice, {
+        room: room.slug,
+        operator: dddiceRoll.operator,
+        external_id: uuid,
+      });
+    } catch (e) {
+      console.error(e);
+      ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e.message ?? e}`);
+    }
   }
   return new Promise<void>(resolve => {
     pendingRollsFromShowForRoll.set(uuid, resolve);
@@ -254,6 +284,8 @@ const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
           const dddiceRoll = convertFVTTDiceEquation(roll, theme?.id);
           log.debug('formatted dddice roll', dddiceRoll);
           if (chatMessage.isAuthor && dddiceRoll.dice.length > 0) {
+            assertThemeSupportsRoll(theme, dddiceRoll.dice, roll._formula);
+
             let participantIds;
             const whisper: IUser[] = chatMessage.whisper.map(
               user =>
@@ -293,7 +325,7 @@ const rollDiceFromChatMessage = async (chatMessage: ChatMessage) => {
           }
         } catch (e) {
           console.error(e);
-          ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e}`);
+          ui.notifications?.error(`dddice | ${e.response?.data?.data?.message ?? e.message ?? e}`);
           document
             .querySelector(`[data-message-id='${chatMessage.id}']`)
             ?.classList.remove('!dddice-hidden');
@@ -370,19 +402,7 @@ async function createGuestUserIfNeeded() {
   } else {
     log.info('pick random theme');
     didSetup = true;
-    const themes = (await api.diceBox.list()).data.filter(theme =>
-      Object.values(
-        theme.available_dice
-          .map(die => die.type ?? die)
-          .reduce(
-            (prev, curr) => {
-              prev[curr] = true;
-              return prev;
-            },
-            { d4: false, d6: false, d8: false, d10: false, d10x: false, d20: false },
-          ),
-      ).every(type => type),
-    );
+    const themes = (await api.diceBox.list()).data.filter(isFullPolyhedralTheme);
     await game.settings.set(
       'dddice',
       'theme',

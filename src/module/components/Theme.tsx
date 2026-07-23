@@ -39,7 +39,12 @@ const Theme = (props: IThemeProps) => {
           )*/}
         </div>
         <div data-tip="switch dice">
-          <ThemeCard theme={theme} onClick={() => onSwitchTheme()} key={theme.id} />
+          <ThemeCard
+            theme={theme}
+            onClick={() => onSwitchTheme()}
+            key={theme.id}
+            showCompletenessWarning
+          />
         </div>
       </div>
     );
